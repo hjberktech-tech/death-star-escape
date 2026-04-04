@@ -13,6 +13,7 @@ canvas.height = SCREEN_H;
 const ctx = canvas.getContext('2d');
 
 let gameState, player, enemies, boss, weapon, bossActive, pickups;
+let pendingLockDoor = null; // { x, y, threshold } — locked once player crosses in
 let lastTime = null;
 
 function initGame() {
@@ -22,6 +23,7 @@ function initGame() {
   boss      = new DarthVader();
   weapon    = new Weapon();
   bossActive = false;
+  pendingLockDoor = null;
 
   // Clone pickup list with active flag
   pickups = LEVEL_META.pickups.map(p => ({ ...p, active: true }));
@@ -34,7 +36,9 @@ function allEnemiesDead() {
 function onBossRoomEntered(doorX, doorY) {
   bossActive = true;
   boss.activate();
-  lockDoor(doorX, doorY); // seal room behind player
+  // Delay the lock until the player has physically walked through
+  // (locking immediately re-seals the door before they can cross)
+  pendingLockDoor = { x: doorX, y: doorY, threshold: doorY + 1.0 };
 }
 
 function collectPickups() {
@@ -56,6 +60,12 @@ function update(dt) {
   updateAllEnemies(enemies, player, dt);
   if (bossActive) boss.update(dt, player);
   collectPickups();
+
+  // Lock boss door once player has crossed into the room
+  if (pendingLockDoor && player.y >= pendingLockDoor.threshold) {
+    lockDoor(pendingLockDoor.x, pendingLockDoor.y);
+    pendingLockDoor = null;
+  }
 
   if (player.isDead())            gameState = GameState.DEAD;
   else if (bossActive && boss.isDefeated()) gameState = GameState.WIN;
