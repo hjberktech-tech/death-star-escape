@@ -113,7 +113,7 @@ export const LEVEL_META = {
     // Room F
     { x: 16.5, y:14.5, type: 'stormtrooper', patrol: [{x:10,y:10},{x:23,y:10},{x:23,y:18},{x:10,y:18}] },
     // Room G (2 troopers)
-    { x: 30.5, y:13.5, type: 'stormtrooper', patrol: [{x:25,y:10},{x:40,y:10},{x:40,y:14},{x:25,y:14}] },
+    { x: 27.5, y:13.5, type: 'stormtrooper', patrol: [{x:25,y:10},{x:40,y:10},{x:40,y:14},{x:25,y:14}] },
     { x: 40.5, y:16.5, type: 'stormtrooper', patrol: [{x:30,y:15},{x:46,y:15},{x:46,y:18},{x:30,y:18}] },
     // Room H
     { x:  6.5, y:24.5, type: 'stormtrooper', patrol: [{x:1,y:20},{x:13,y:20},{x:13,y:28},{x:1,y:28}] },
@@ -144,20 +144,13 @@ export const LEVEL_META = {
   ],
 
   pickups: [
-    // Health packs
+    // Health packs (3) — spread: start area, mid-map, pre-boss
     { x: 7.5, y: 7.5, type: 'health', amount: 25 },
-    { x:15.5, y: 7.5, type: 'health', amount: 25 },
-    { x:42.5, y: 7.5, type: 'health', amount: 25 },
-    { x:38.5, y:16.5, type: 'health', amount: 25 },
-    { x:22.5, y:27.5, type: 'health', amount: 25 },
+    { x:17.5, y:17.5, type: 'health', amount: 25 },
     { x:33.5, y:27.5, type: 'health', amount: 25 },
-    // Ammo packs
-    { x:11.5, y: 2.5, type: 'ammo',   amount: 15 },
+    // Ammo packs (3) — spread: top-right, mid-right, mid-bottom
     { x:25.5, y: 6.5, type: 'ammo',   amount: 15 },
-    { x: 3.5, y:11.5, type: 'ammo',   amount: 15 },
-    { x:21.5, y:11.5, type: 'ammo',   amount: 15 },
-    { x:32.5, y:16.5, type: 'ammo',   amount: 15 },
-    { x:10.5, y:27.5, type: 'ammo',   amount: 15 },
+    { x:38.5, y:16.5, type: 'ammo',   amount: 15 },
     { x:25.5, y:20.5, type: 'ammo',   amount: 15 },
   ],
 };
