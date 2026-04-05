@@ -2,12 +2,14 @@
 
 const AudioManager = (() => {
   let ctx = null;
-  let masterGain, musicGain, sfxGain;
+  let masterGain, sfxGain;
 
-  // Music state
-  let currentTrack    = null;
+  // Music state — each playMusic call gets its own session gain node so old
+  // oscillators can be faded/disconnected independently of the new track.
+  let currentTrack     = null;
   let musicLoopTimeout = null;
-  let musicPlaying    = false;
+  let musicPlaying     = false;
+  let musicSessionGain = null; // active session gain, replaced on each track switch
 
   // Vader breath state
   let vaderBreathing    = false;
@@ -31,10 +33,6 @@ const AudioManager = (() => {
     masterGain.gain.value = 0.8;
     masterGain.connect(ctx.destination);
 
-    musicGain = ctx.createGain();
-    musicGain.gain.value = 0.35;
-    musicGain.connect(masterGain);
-
     sfxGain = ctx.createGain();
     sfxGain.gain.value = 0.7;
     sfxGain.connect(masterGain);
@@ -51,26 +49,25 @@ const AudioManager = (() => {
     C6:84,
   };
 
-  const BPM = 120;
+  const BPM = 104;
   const B   = 60 / BPM; // seconds per beat
 
   // ── Star Wars Main Theme — Bb major ───────────────────────
+  // Two statements of the A-phrase; clean quarter-note rhythm.
   const MAIN_THEME = [
-    // Opening: "Dun dun dun DUN-dah  Eb D C DUN  F"
-    [N.Bb4,0.75],[N.Bb4,0.75],[N.Bb4,0.75],
+    // First statement: "Dun dun dun | DUN-dah | Eb D C | DUN F | Eb D C | DUN(hold)"
+    [N.Bb4,1],[N.Bb4,1],[N.Bb4,1],
     [N.F5,1.5],[N.Bb4,0.5],
-    [N.Eb5,0.75],[N.D5,0.75],[N.C5,0.75],[N.Bb5,1.5],[N.F5,0.5],
-    [N.Eb5,0.75],[N.D5,0.75],[N.C5,0.75],[N.Bb5,2.0],[N.REST,0.5],
-    // Second statement
+    [N.Eb5,1],[N.D5,1],[N.C5,1],
+    [N.Bb5,1.5],[N.F5,0.5],
+    [N.Eb5,1],[N.D5,1],[N.C5,1],
+    [N.Bb5,3],[N.REST,1],
+    // Second statement (starts on F5, same shape)
     [N.F5,1.5],[N.Bb4,0.5],
-    [N.Eb5,0.75],[N.D5,0.75],[N.C5,0.75],[N.Bb5,1.5],[N.F5,0.5],
-    [N.Eb5,0.75],[N.D5,0.75],[N.C5,0.75],[N.Bb5,2.0],[N.REST,1.0],
-    // Triumphant bridge
-    [N.G5,1.5],[N.Bb4,0.5],[N.Bb4,0.5],
-    [N.G5,1.5],[N.Bb4,0.5],[N.Bb4,0.5],
-    [N.G5,1.5],[N.Eb5,0.5],
-    [N.Eb5,0.5],[N.D5,0.5],[N.C5,0.5],
-    [N.Bb5,2.0],[N.REST,1.0],
+    [N.Eb5,1],[N.D5,1],[N.C5,1],
+    [N.Bb5,1.5],[N.F5,0.5],
+    [N.Eb5,1],[N.D5,1],[N.C5,1],
+    [N.Bb5,3],[N.REST,3],
   ];
 
   // ── Imperial March — G minor ──────────────────────────────
@@ -92,7 +89,9 @@ const AudioManager = (() => {
     [N.Bb4,1.0],[N.G4,0.75],[N.Bb4,0.25],[N.D5,2.0],
   ];
 
-  function scheduleSequence(seq, startTime) {
+  // targetGain is the session-specific gain node, so old oscillators on a
+  // previous session are never heard when the new session fades in.
+  function scheduleSequence(seq, startTime, targetGain) {
     let t = startTime;
     for (const [note, beats] of seq) {
       if (note !== N.REST) {
@@ -106,7 +105,7 @@ const AudioManager = (() => {
         env.gain.setValueAtTime(0.3, t + dur * 0.85);
         env.gain.linearRampToValueAtTime(0, t + dur);
         osc.connect(env);
-        env.connect(musicGain);
+        env.connect(targetGain);
         osc.start(t);
         osc.stop(t + dur + 0.05);
       }
@@ -115,39 +114,54 @@ const AudioManager = (() => {
     return t;
   }
 
-  function _loopMusic() {
+  function _loopMusic(sessionGain) {
     if (!musicPlaying) return;
     const seq   = currentTrack === 'main' ? MAIN_THEME : IMPERIAL_MARCH;
     const start = ctx.currentTime + 0.05;
-    const end   = scheduleSequence(seq, start);
+    const end   = scheduleSequence(seq, start, sessionGain);
     const delay = Math.max(100, (end - ctx.currentTime - 0.1) * 1000);
-    musicLoopTimeout = setTimeout(_loopMusic, delay);
+    musicLoopTimeout = setTimeout(() => _loopMusic(sessionGain), delay);
   }
 
   function playMusic(track) {
     if (!ctx) return;
     if (currentTrack === track && musicPlaying) return;
+
+    // Stop current loop
     if (musicLoopTimeout) { clearTimeout(musicLoopTimeout); musicLoopTimeout = null; }
     musicPlaying = false;
-    musicGain.gain.cancelScheduledValues(ctx.currentTime);
-    musicGain.gain.setTargetAtTime(0, ctx.currentTime, 0.3);
+
+    // Fade out and disconnect old session (old oscillators stay bound to it, go silent)
+    if (musicSessionGain) {
+      const old = musicSessionGain;
+      old.gain.setTargetAtTime(0, ctx.currentTime, 0.3);
+      setTimeout(() => { try { old.disconnect(); } catch (_) {} }, 2000);
+    }
+
+    // New session gain starts silent, fades in after a short pause
+    const session = ctx.createGain();
+    session.gain.value = 0;
+    session.connect(masterGain);
+    musicSessionGain = session;
+    currentTrack = track;
+
     setTimeout(() => {
-      if (!ctx) return;
-      currentTrack = track;
+      if (!ctx || musicSessionGain !== session) return; // superseded
       musicPlaying = true;
-      musicGain.gain.cancelScheduledValues(ctx.currentTime);
-      musicGain.gain.setTargetAtTime(0.35, ctx.currentTime, 0.5);
-      _loopMusic();
-    }, 600);
+      session.gain.setTargetAtTime(0.15, ctx.currentTime, 0.5); // quiet background level
+      _loopMusic(session);
+    }, 500);
   }
 
   function stopMusic() {
     musicPlaying = false;
     currentTrack = null;
     if (musicLoopTimeout) { clearTimeout(musicLoopTimeout); musicLoopTimeout = null; }
-    if (ctx && musicGain) {
-      musicGain.gain.cancelScheduledValues(ctx.currentTime);
-      musicGain.gain.setTargetAtTime(0, ctx.currentTime, 0.5);
+    if (musicSessionGain) {
+      const old = musicSessionGain;
+      musicSessionGain = null;
+      old.gain.setTargetAtTime(0, ctx.currentTime, 0.5);
+      setTimeout(() => { try { old.disconnect(); } catch (_) {} }, 2000);
     }
   }
 
@@ -300,6 +314,23 @@ const AudioManager = (() => {
     src.stop(ctx.currentTime + 0.08);
   }
 
+  // ── Pickup ────────────────────────────────────────────────
+  function playPickup() {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    [880, 1320].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const env = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      const st = t + i * 0.09;
+      env.gain.setValueAtTime(0.35, st);
+      env.gain.exponentialRampToValueAtTime(0.001, st + 0.14);
+      osc.connect(env); env.connect(sfxGain);
+      osc.start(st); osc.stop(st + 0.16);
+    });
+  }
+
   return {
     init,
     playMusic, stopMusic,
@@ -307,7 +338,7 @@ const AudioManager = (() => {
     playTrooperAlert, playTrooperDeath,
     startVaderBreath, stopVaderBreath, updateVaderBreathPhase,
     updatePlayerBreath, stopPlayerBreath,
-    playFootstep,
+    playFootstep, playPickup,
   };
 })();
 

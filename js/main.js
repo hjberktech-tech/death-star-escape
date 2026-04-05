@@ -50,6 +50,7 @@ function collectPickups() {
       if (p.type === 'health') player.heal(p.amount);
       else                     player.addAmmo(p.amount);
       p.active = false;
+      AudioManager.playPickup();
     }
   }
 }
