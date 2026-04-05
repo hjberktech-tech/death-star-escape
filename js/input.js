@@ -37,8 +37,8 @@ export const Input = {
       case 'KeyS': case 'ArrowDown':  this.back       = down; break;
       case 'ArrowLeft':  this.rotLeft    = down; break;
       case 'ArrowRight': this.rotRight   = down; break;
-      case 'KeyA':       this.strafeLeft  = down; break;
-      case 'KeyD':       this.strafeRight = down; break;
+      case 'KeyA':       this.strafeRight = down; break;
+      case 'KeyD':       this.strafeLeft  = down; break;
       case 'Space':
         if (down) this.shoot = true;
         e.preventDefault();
