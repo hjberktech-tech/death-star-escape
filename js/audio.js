@@ -45,8 +45,25 @@ const AudioManager = (() => {
     C6:84,
   };
 
-  const BPM = 100;
-  const B   = 60 / BPM; // seconds per beat
+  const BPM   = 100;
+  const B     = 60 / BPM;    // seconds per beat (Level 1)
+  const B_L2  = 60 / 140;    // seconds per beat (Level 2, 140 BPM)
+
+  // ── Level 2 Battle Theme — D minor, 140 BPM ──────────────
+  const LEVEL2_MUSIC = [
+    [N.D4,0.5],[N.REST,0.25],[N.D4,0.25],[N.F4,0.5],[N.A4,0.5],
+    [N.Bb4,0.75],[N.A4,0.25],[N.G4,0.5],[N.F4,0.5],
+    [N.D4,0.5],[N.REST,0.25],[N.D4,0.25],[N.Eb4,0.5],[N.G4,0.5],
+    [N.A4,1.5],[N.REST,0.5],
+    [N.F4,0.5],[N.G4,0.5],[N.A4,0.5],[N.Bb4,0.5],
+    [N.C5,0.5],[N.Bb4,0.5],[N.A4,0.5],[N.G4,0.5],
+    [N.F4,0.5],[N.A4,0.5],[N.D5,1.5],[N.REST,0.5],
+    [N.Eb4,0.5],[N.REST,0.25],[N.Eb4,0.25],[N.Gb4,0.5],[N.Ab4,0.5],
+    [N.Bb4,0.75],[N.Ab4,0.25],[N.Gb4,0.5],[N.Eb4,0.5],
+    [N.D4,1.5],[N.REST,0.5],
+    [N.A4,0.5],[N.G4,0.5],[N.F4,0.5],[N.E4,0.5],
+    [N.F4,0.5],[N.D4,0.5],[N.D5,2],[N.REST,2],
+  ];
 
   // ── Star Wars Main Theme — Bb major ───────────────────────
   // F5 = dotted quarter (1.5), quick Bb4 eighth (0.5), then eighth-run to Bb5.
@@ -83,11 +100,11 @@ const AudioManager = (() => {
 
   // targetGain is the session-specific gain node, so old oscillators on a
   // previous session are never heard when the new session fades in.
-  function scheduleSequence(seq, startTime, targetGain) {
+  function scheduleSequence(seq, startTime, targetGain, beatDur = B) {
     let t = startTime;
     for (const [note, beats] of seq) {
       if (note !== N.REST) {
-        const dur = beats * B;
+        const dur = beats * beatDur;
         const osc = ctx.createOscillator();
         const env = ctx.createGain();
         osc.type = 'square';
@@ -101,16 +118,23 @@ const AudioManager = (() => {
         osc.start(t);
         osc.stop(t + dur + 0.05);
       }
-      t += beats * B;
+      t += beats * beatDur;
     }
     return t;
   }
 
   function _loopMusic(sessionGain) {
     if (!musicPlaying) return;
-    const seq   = currentTrack === 'main' ? MAIN_THEME : IMPERIAL_MARCH;
+    let seq, beatDur;
+    if (currentTrack === 'main') {
+      seq = MAIN_THEME; beatDur = B;
+    } else if (currentTrack === 'level2') {
+      seq = LEVEL2_MUSIC; beatDur = B_L2;
+    } else {
+      seq = IMPERIAL_MARCH; beatDur = B;
+    }
     const start = ctx.currentTime + 0.05;
-    const end   = scheduleSequence(seq, start, sessionGain);
+    const end   = scheduleSequence(seq, start, sessionGain, beatDur);
     const delay = Math.max(100, (end - ctx.currentTime - 0.1) * 1000);
     musicLoopTimeout = setTimeout(() => _loopMusic(sessionGain), delay);
   }
@@ -329,6 +353,50 @@ const AudioManager = (() => {
     src.stop(ctx.currentTime + 0.08);
   }
 
+  // ── Explosion (Level 2) ───────────────────────────────────
+  function playExplosion() {
+    if (!ctx) return;
+    const t = ctx.currentTime + 0.01;
+
+    // Noise burst
+    const src    = _noise(0.3);
+    const filter = ctx.createBiquadFilter();
+    filter.type            = 'bandpass';
+    filter.frequency.value = 200;
+    filter.Q.value         = 1.5;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.6, t);
+    env.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    src.connect(filter); filter.connect(env); env.connect(masterGain);
+    src.start(t); src.stop(t + 0.32);
+
+    // Descending tone
+    const osc = ctx.createOscillator();
+    const env2 = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.25);
+    env2.gain.setValueAtTime(0.4, t);
+    env2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    osc.connect(env2); env2.connect(masterGain);
+    osc.start(t); osc.stop(t + 0.27);
+  }
+
+  // ── Shield Hit (Level 2) ──────────────────────────────────
+  function playShieldHit() {
+    if (!ctx) return;
+    const t = ctx.currentTime + 0.01;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(900, t);
+    osc.frequency.linearRampToValueAtTime(600, t + 0.12);
+    env.gain.setValueAtTime(0.5, t);
+    env.gain.linearRampToValueAtTime(0, t + 0.12);
+    osc.connect(env); env.connect(masterGain);
+    osc.start(t); osc.stop(t + 0.14);
+  }
+
   // ── Pickup ────────────────────────────────────────────────
   function playPickup() {
     if (!ctx) return;
@@ -354,6 +422,7 @@ const AudioManager = (() => {
     startVaderBreath, stopVaderBreath, updateVaderBreathPhase,
     updatePlayerBreath, stopPlayerBreath,
     playFootstep, playPickup,
+    playExplosion, playShieldHit,
   };
 })();
 

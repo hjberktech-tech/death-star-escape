@@ -29,6 +29,7 @@ export const Input = {
     document.addEventListener('mousedown', e => {
       if (e.button === 0 && this.pointerLocked) this.shoot = true;
     });
+    document.addEventListener('mouseup', e => { if (e.button === 0) this.shoot = false; });
   },
 
   _onKey(e, down) {
@@ -41,6 +42,7 @@ export const Input = {
       case 'KeyD':       this.strafeLeft  = down; break;
       case 'Space':
         if (down) this.shoot = true;
+        else this.shoot = false;
         e.preventDefault();
         break;
       case 'KeyF': case 'Enter':

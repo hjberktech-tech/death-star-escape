@@ -9,6 +9,7 @@ export const GameState = {
   PLAYING: 'playing',
   DEAD: 'dead',
   WIN: 'win',
+  LEVEL2: 'level2',
 };
 
 export function renderFrame(ctx, state) {

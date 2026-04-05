@@ -7,6 +7,7 @@ import { DarthVader } from './boss.js';
 import { Weapon } from './weapons.js';
 import { renderFrame, GameState } from './renderer.js';
 import AudioManager from './audio.js';
+import { initLevel2, updateLevel2, renderLevel2, getState2, L2State } from './level2/main2.js';
 
 const canvas = document.getElementById('game');
 canvas.width  = SCREEN_W;
@@ -105,9 +106,13 @@ function gameLoop(timestamp) {
   const dt = lastTime === null ? 0 : Math.min((timestamp - lastTime) / 1000, 0.05);
   lastTime = timestamp;
 
-  if (gameState === GameState.PLAYING) update(dt);
-
-  renderFrame(ctx, { gameState, player, enemies, boss, weapon, bossActive, pickups });
+  if (gameState === GameState.LEVEL2) {
+    updateLevel2(dt);
+    renderLevel2(ctx);
+  } else {
+    if (gameState === GameState.PLAYING) update(dt);
+    renderFrame(ctx, { gameState, player, enemies, boss, weapon, bossActive, pickups });
+  }
 }
 
 canvas.addEventListener('click', () => {
@@ -116,13 +121,22 @@ canvas.addEventListener('click', () => {
     initGame();
     gameState = GameState.PLAYING;
     AudioManager.playMusic('main');
-  } else if (gameState === GameState.DEAD || gameState === GameState.WIN) {
+  } else if (gameState === GameState.DEAD) {
     AudioManager.stopMusic();
     AudioManager.stopVaderBreath();
     AudioManager.stopPlayerBreath();
     initGame();
     gameState = GameState.PLAYING;
     AudioManager.playMusic('main');
+  } else if (gameState === GameState.WIN) {
+    AudioManager.stopMusic();
+    AudioManager.stopVaderBreath();
+    initLevel2();
+    gameState = GameState.LEVEL2;
+  } else if (gameState === GameState.LEVEL2) {
+    const s = getState2();
+    if (s === L2State.DEAD) { initLevel2(); }
+    else if (s === L2State.WIN) { initGame(); gameState = GameState.TITLE; AudioManager.stopMusic(); }
   }
 });
 
