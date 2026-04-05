@@ -2,7 +2,7 @@
 
 const AudioManager = (() => {
   let ctx = null;
-  let masterGain, sfxGain;
+  let masterGain;
 
   // Music state — each playMusic call gets its own session gain node so old
   // oscillators can be faded/disconnected independently of the new track.
@@ -30,12 +30,8 @@ const AudioManager = (() => {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
 
     masterGain = ctx.createGain();
-    masterGain.gain.value = 0.8;
+    masterGain.gain.value = 0.7;
     masterGain.connect(ctx.destination);
-
-    sfxGain = ctx.createGain();
-    sfxGain.gain.value = 0.7;
-    sfxGain.connect(masterGain);
   }
 
   function midi(n) { return 440 * Math.pow(2, (n - 69) / 12); }
@@ -164,48 +160,52 @@ const AudioManager = (() => {
   // ── Blaster ───────────────────────────────────────────────
   function playBlaster() {
     if (!ctx) return;
-    const t   = ctx.currentTime;
+    ctx.resume();
+    // Use small lookahead so scheduled events are never in the past
+    const t = ctx.currentTime + 0.01;
     const osc = ctx.createOscillator();
     const env = ctx.createGain();
     osc.type = 'square';
-    // Classic pew: starts mid-low, drops fast — much more audible than 880Hz
-    osc.frequency.setValueAtTime(520, t);
-    osc.frequency.exponentialRampToValueAtTime(80, t + 0.22);
-    env.gain.setValueAtTime(0.9, t);
-    env.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-    osc.connect(env); env.connect(sfxGain);
-    osc.start(t); osc.stop(t + 0.28);
+    // 300→60 Hz sweep — laptop speakers reproduce this range clearly
+    osc.frequency.setValueAtTime(300, t);
+    osc.frequency.linearRampToValueAtTime(60, t + 0.22);
+    // Linear ramp to zero avoids any exponential scheduling edge cases
+    env.gain.setValueAtTime(1.0, t);
+    env.gain.linearRampToValueAtTime(0, t + 0.22);
+    osc.connect(env); env.connect(masterGain);
+    osc.start(t); osc.stop(t + 0.24);
   }
 
   // ── Trooper alert — "HEY there!" ─────────────────────────
   function playTrooperAlert() {
     if (!ctx) return;
+    ctx.resume();
     const now = ctx.currentTime;
     if (now - lastAlertTime < 0.6) return; // rate-limit simultaneous alerts
     lastAlertTime = now;
+    const t = now + 0.01;
 
-    // "HEY" — sharp short exclamation, high-ish pitch with quick decay
+    // "HEY" — short sharp mid tone, full gain at start
     const osc1 = ctx.createOscillator();
     const env1 = ctx.createGain();
     osc1.type = 'square';
-    osc1.frequency.setValueAtTime(720, now);
-    osc1.frequency.linearRampToValueAtTime(640, now + 0.13);
-    env1.gain.setValueAtTime(0.32, now);
-    env1.gain.linearRampToValueAtTime(0, now + 0.15);
-    osc1.connect(env1); env1.connect(sfxGain);
-    osc1.start(now); osc1.stop(now + 0.17);
+    osc1.frequency.setValueAtTime(480, t);
+    osc1.frequency.linearRampToValueAtTime(420, t + 0.14);
+    env1.gain.setValueAtTime(0.7, t);
+    env1.gain.linearRampToValueAtTime(0, t + 0.15);
+    osc1.connect(env1); env1.connect(masterGain);
+    osc1.start(t); osc1.stop(t + 0.17);
 
-    // "there" — lower, descending, held briefly
+    // "there" — lower descending tone follows immediately
     const osc2 = ctx.createOscillator();
     const env2 = ctx.createGain();
     osc2.type = 'square';
-    osc2.frequency.setValueAtTime(460, now + 0.16);
-    osc2.frequency.linearRampToValueAtTime(360, now + 0.42);
-    env2.gain.setValueAtTime(0, now + 0.16);
-    env2.gain.linearRampToValueAtTime(0.26, now + 0.18);
-    env2.gain.linearRampToValueAtTime(0, now + 0.44);
-    osc2.connect(env2); env2.connect(sfxGain);
-    osc2.start(now + 0.16); osc2.stop(now + 0.46);
+    osc2.frequency.setValueAtTime(300, t + 0.16);
+    osc2.frequency.linearRampToValueAtTime(220, t + 0.42);
+    env2.gain.setValueAtTime(0.6, t + 0.16);
+    env2.gain.linearRampToValueAtTime(0, t + 0.44);
+    osc2.connect(env2); env2.connect(masterGain);
+    osc2.start(t + 0.16); osc2.stop(t + 0.46);
   }
 
   // ── Trooper death scream ──────────────────────────────────
@@ -219,7 +219,7 @@ const AudioManager = (() => {
     osc.frequency.exponentialRampToValueAtTime(80, t + 0.5);
     env.gain.setValueAtTime(0.4, t);
     env.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-    osc.connect(env); env.connect(sfxGain);
+    osc.connect(env); env.connect(masterGain);
     osc.start(t); osc.stop(t + 0.55);
   }
 
@@ -245,7 +245,7 @@ const AudioManager = (() => {
     env.gain.setValueAtTime(0, ctx.currentTime);
     env.gain.linearRampToValueAtTime(vol, ctx.currentTime + dur * 0.3);
     env.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
-    src.connect(filter); filter.connect(env); env.connect(sfxGain);
+    src.connect(filter); filter.connect(env); env.connect(masterGain);
     src.start(ctx.currentTime);
     src.stop(ctx.currentTime + dur + 0.05);
   }
@@ -324,7 +324,7 @@ const AudioManager = (() => {
     const env = ctx.createGain();
     env.gain.setValueAtTime(isPlayer ? 0.3 : 0.12, ctx.currentTime);
     env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
-    src.connect(filter); filter.connect(env); env.connect(sfxGain);
+    src.connect(filter); filter.connect(env); env.connect(masterGain);
     src.start(ctx.currentTime);
     src.stop(ctx.currentTime + 0.08);
   }
@@ -341,7 +341,7 @@ const AudioManager = (() => {
       const st = t + i * 0.09;
       env.gain.setValueAtTime(0.35, st);
       env.gain.exponentialRampToValueAtTime(0.001, st + 0.14);
-      osc.connect(env); env.connect(sfxGain);
+      osc.connect(env); env.connect(masterGain);
       osc.start(st); osc.stop(st + 0.16);
     });
   }
