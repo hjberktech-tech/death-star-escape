@@ -35,10 +35,10 @@ export const Input = {
     switch (e.code) {
       case 'KeyW': case 'ArrowUp':    this.forward    = down; break;
       case 'KeyS': case 'ArrowDown':  this.back       = down; break;
-      case 'KeyA': case 'ArrowLeft':  this.rotLeft    = down; break;
-      case 'KeyD': case 'ArrowRight': this.rotRight   = down; break;
-      case 'KeyQ': case 'KeyZ':       this.strafeLeft  = down; break;
-      case 'KeyE': case 'KeyC':       this.strafeRight = down; break;
+      case 'ArrowLeft':  this.rotLeft    = down; break;
+      case 'ArrowRight': this.rotRight   = down; break;
+      case 'KeyA':       this.strafeLeft  = down; break;
+      case 'KeyD':       this.strafeRight = down; break;
       case 'Space':
         if (down) this.shoot = true;
         e.preventDefault();

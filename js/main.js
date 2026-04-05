@@ -34,10 +34,7 @@ function allEnemiesDead() {
 }
 
 function onBossRoomEntered(doorX, doorY) {
-  bossActive = true;
-  boss.activate();
-  // Delay the lock until the player has physically walked through
-  // (locking immediately re-seals the door before they can cross)
+  // Delay both the lock and the boss spawn until the player has crossed in
   pendingLockDoor = { x: doorX, y: doorY, threshold: doorY + 1.0 };
 }
 
@@ -61,10 +58,12 @@ function update(dt) {
   if (bossActive) boss.update(dt, player);
   collectPickups();
 
-  // Lock boss door once player has crossed into the room
+  // Lock boss door and spawn Vader once player has crossed into the room
   if (pendingLockDoor && player.y >= pendingLockDoor.threshold) {
     lockDoor(pendingLockDoor.x, pendingLockDoor.y);
     pendingLockDoor = null;
+    bossActive = true;
+    boss.activate();
   }
 
   if (player.isDead())            gameState = GameState.DEAD;
