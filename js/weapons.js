@@ -1,7 +1,6 @@
 import { isWall } from './map.js';
 import { Input } from './input.js';
 import { EnemyState } from './enemies.js';
-import AudioManager from './audio.js';
 
 const WEAPON_DAMAGE = 25;
 const FIRE_COOLDOWN = 0.25;
@@ -9,23 +8,25 @@ const BULLET_RANGE = 20;
 
 export class Weapon {
   constructor() {
-    this.fireCooldown = 0;
+    this.fireCooldown  = 0;
     this.fireAnimTimer = 0;
-    this.isFiring = false;
+    this.isFiring      = false;
+    this.firedThisFrame = false; // main.js reads this to trigger audio
   }
 
   update(dt, player, enemies, boss) {
-    this.fireCooldown -= dt;
+    this.firedThisFrame = false;
+    this.fireCooldown  -= dt;
     this.fireAnimTimer -= dt;
     if (this.fireAnimTimer <= 0) this.isFiring = false;
 
     if (Input.consumeShoot() && this.fireCooldown <= 0) {
       if (player.ammo > 0) {
         player.ammo--;
-        this.fireCooldown = FIRE_COOLDOWN;
-        this.fireAnimTimer = 0.12;
-        this.isFiring = true;
-        AudioManager.playBlaster();
+        this.fireCooldown   = FIRE_COOLDOWN;
+        this.fireAnimTimer  = 0.12;
+        this.isFiring       = true;
+        this.firedThisFrame = true;
         this._doHit(player, enemies, boss);
       }
     }

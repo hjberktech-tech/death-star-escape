@@ -45,20 +45,20 @@ const AudioManager = (() => {
     C6:84,
   };
 
-  const BPM = 108;
+  const BPM = 100;
   const B   = 60 / BPM; // seconds per beat
 
   // ── Star Wars Main Theme — Bb major ───────────────────────
-  // F5 = half note (2 beats), not dotted quarter.  Two A-phrases then loop.
+  // F5 = dotted quarter (1.5), quick Bb4 eighth (0.5), then eighth-run to Bb5.
   const MAIN_THEME = [
     // First statement
     [N.Bb4,1],[N.Bb4,1],[N.Bb4,1],
-    [N.F5,2],[N.Bb4,1],
-    [N.Eb5,1],[N.D5,1],[N.C5,1],
-    [N.Bb5,3],[N.REST,1],
+    [N.F5,1.5],[N.Bb4,0.5],
+    [N.Eb5,0.5],[N.D5,0.5],[N.C5,1],
+    [N.Bb5,2],[N.REST,1],
     // Second statement
-    [N.F5,2],[N.Bb4,1],
-    [N.Eb5,1],[N.D5,1],[N.C5,1],
+    [N.F5,1.5],[N.Bb4,0.5],
+    [N.Eb5,0.5],[N.D5,0.5],[N.C5,1],
     [N.Bb5,3],[N.REST,3],
   ];
 
@@ -297,15 +297,15 @@ const AudioManager = (() => {
   function _playerBreathCycle() {
     if (!playerBreathing) return;
     const low = playerHealthLevel === 'low';
-    // Short sharp inhale burst
-    _breathPulse(low ? 350 : 450, low ? 0.22 : 0.12, 0.12);
-    // Exhale burst slightly after, longer than inhale
+    // Inhale: very short hiss (50 ms)
+    _breathPulse(low ? 600 : 700, low ? 0.25 : 0.14, 0.05);
+    // Exhale: slightly longer and lower (80 ms), after 300 ms gap
     setTimeout(() => {
       if (!playerBreathing) return;
-      _breathPulse(low ? 280 : 380, low ? 0.18 : 0.09, 0.18);
-    }, 180);
-    // Next breath after a clear gap
-    playerBreathTimeout = setTimeout(_playerBreathCycle, low ? 1100 : 2200);
+      _breathPulse(low ? 350 : 450, low ? 0.2 : 0.11, 0.08);
+    }, 300);
+    // Long silence before next breath — clearly pulsed
+    playerBreathTimeout = setTimeout(_playerBreathCycle, low ? 1400 : 2600);
   }
 
   function stopPlayerBreath() {

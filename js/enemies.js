@@ -43,6 +43,10 @@ export class Enemy {
     this._prevX = data.x;
     this._prevY = data.y;
     this.footstepAccum = 0;
+
+    // Audio flags — consumed by main.js each frame
+    this.alertSoundPending = false;
+    this.deathSoundPending = false;
   }
 
   update(dt, player) {
@@ -139,14 +143,14 @@ export class Enemy {
     switch (state) {
       case EnemyState.ALERT:
         this.stateTimer = 0.5;
-        AudioManager.playTrooperAlert();
+        this.alertSoundPending = true;
         break;
       case EnemyState.SEARCH: this.stateTimer = 3.0; break;
       case EnemyState.PAIN:   this.stateTimer = 0.2; break;
       case EnemyState.DEAD:
         this.stateTimer = 0.8;
         this.animFrame  = 0;
-        AudioManager.playTrooperDeath();
+        this.deathSoundPending = true;
         break;
     }
   }

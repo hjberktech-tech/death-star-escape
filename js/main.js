@@ -58,7 +58,14 @@ function collectPickups() {
 function update(dt) {
   player.update(dt, allEnemiesDead, onBossRoomEntered);
   weapon.update(dt, player, enemies, boss);
+  if (weapon.firedThisFrame) AudioManager.playBlaster();
+
   updateAllEnemies(enemies, player, dt);
+  for (const e of enemies) {
+    if (e.alertSoundPending) { e.alertSoundPending = false; AudioManager.playTrooperAlert(); }
+    if (e.deathSoundPending) { e.deathSoundPending = false; AudioManager.playTrooperDeath(); }
+  }
+
   if (bossActive) boss.update(dt, player);
   collectPickups();
 
