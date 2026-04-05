@@ -4,6 +4,7 @@ import {
 } from './constants.js';
 import { isWall, isDoor, getCell, getDoorState, openDoor, LEVEL_META } from './map.js';
 import { Input } from './input.js';
+import AudioManager from './audio.js';
 
 export class Player {
   constructor() {
@@ -27,6 +28,10 @@ export class Player {
 
     this.blockedMessage = '';
     this.blockedTimer   = 0;
+
+    this._prevX = s.x;
+    this._prevY = s.y;
+    this.footstepAccum = 0;
   }
 
   // canOpenBossDoor: () => bool   called when player tries to open boss door
@@ -74,6 +79,18 @@ export class Player {
 
     if (this.damageFX   > 0) this.damageFX   -= dt;
     if (this.blockedTimer > 0) this.blockedTimer -= dt;
+
+    // Footsteps
+    const distMoved = Math.hypot(this.x - this._prevX, this.y - this._prevY);
+    this._prevX = this.x;
+    this._prevY = this.y;
+    if (distMoved > 0) {
+      this.footstepAccum += distMoved;
+      if (this.footstepAccum >= 0.38) {
+        this.footstepAccum = 0;
+        AudioManager.playFootstep(true);
+      }
+    }
   }
 
   _tryInteract(canOpenBossDoor, onBossRoomEntered) {

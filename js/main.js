@@ -6,6 +6,7 @@ import { Enemy, updateAllEnemies, EnemyState } from './enemies.js';
 import { DarthVader } from './boss.js';
 import { Weapon } from './weapons.js';
 import { renderFrame, GameState } from './renderer.js';
+import AudioManager from './audio.js';
 
 const canvas = document.getElementById('game');
 canvas.width  = SCREEN_W;
@@ -13,7 +14,8 @@ canvas.height = SCREEN_H;
 const ctx = canvas.getContext('2d');
 
 let gameState, player, enemies, boss, weapon, bossActive, pickups;
-let pendingLockDoor = null; // { x, y, threshold } — locked once player crosses in
+let pendingLockDoor  = null; // { x, y, threshold } — locked once player crosses in
+let vaderWasPhase2   = false;
 let lastTime = null;
 
 function initGame() {
@@ -22,8 +24,9 @@ function initGame() {
   enemies   = LEVEL_META.enemies.map(d => new Enemy(d));
   boss      = new DarthVader();
   weapon    = new Weapon();
-  bossActive = false;
+  bossActive      = false;
   pendingLockDoor = null;
+  vaderWasPhase2  = false;
 
   // Clone pickup list with active flag
   pickups = LEVEL_META.pickups.map(p => ({ ...p, active: true }));
@@ -64,10 +67,29 @@ function update(dt) {
     pendingLockDoor = null;
     bossActive = true;
     boss.activate();
+    AudioManager.playMusic('imperial');
+    AudioManager.startVaderBreath(false);
   }
 
-  if (player.isDead())            gameState = GameState.DEAD;
-  else if (bossActive && boss.isDefeated()) gameState = GameState.WIN;
+  // Vader phase 2 — heavier breathing
+  if (bossActive && boss.phase2 && !vaderWasPhase2) {
+    vaderWasPhase2 = true;
+    AudioManager.updateVaderBreathPhase(true);
+  }
+
+  // Player breathing reacts to health
+  AudioManager.updatePlayerBreath(player.health);
+
+  if (player.isDead()) {
+    gameState = GameState.DEAD;
+    AudioManager.stopMusic();
+    AudioManager.stopVaderBreath();
+    AudioManager.stopPlayerBreath();
+  } else if (bossActive && boss.isDefeated()) {
+    gameState = GameState.WIN;
+    AudioManager.stopMusic();
+    AudioManager.stopVaderBreath();
+  }
 }
 
 function gameLoop(timestamp) {
@@ -82,11 +104,17 @@ function gameLoop(timestamp) {
 
 canvas.addEventListener('click', () => {
   if (gameState === GameState.TITLE) {
+    AudioManager.init();
     initGame();
     gameState = GameState.PLAYING;
+    AudioManager.playMusic('main');
   } else if (gameState === GameState.DEAD || gameState === GameState.WIN) {
+    AudioManager.stopMusic();
+    AudioManager.stopVaderBreath();
+    AudioManager.stopPlayerBreath();
     initGame();
     gameState = GameState.PLAYING;
+    AudioManager.playMusic('main');
   }
 });
 

@@ -1,6 +1,7 @@
 import { isWall } from './map.js';
 import { Input } from './input.js';
 import { EnemyState } from './enemies.js';
+import AudioManager from './audio.js';
 
 const WEAPON_DAMAGE = 25;
 const FIRE_COOLDOWN = 0.25;
@@ -24,6 +25,7 @@ export class Weapon {
         this.fireCooldown = FIRE_COOLDOWN;
         this.fireAnimTimer = 0.12;
         this.isFiring = true;
+        AudioManager.playBlaster();
         this._doHit(player, enemies, boss);
       }
     }

@@ -3,6 +3,7 @@ import {
   TROOPER_MOVE_SPEED, TROOPER_SIGHT_RANGE, TROOPER_ATTACK_RANGE,
 } from './constants.js';
 import { isWall } from './map.js';
+import AudioManager from './audio.js';
 
 export const EnemyState = {
   PATROL: 'patrol',
@@ -38,6 +39,10 @@ export class Enemy {
     this.animFrame = 0;
     this.animTimer = 0;
     this.phase2 = false;
+
+    this._prevX = data.x;
+    this._prevY = data.y;
+    this.footstepAccum = 0;
   }
 
   update(dt, player) {
@@ -102,6 +107,20 @@ export class Enemy {
         if (this.stateTimer <= 0) this.active = false;
         break;
     }
+
+    // Footsteps — only for nearby moving enemies
+    const distMoved    = Math.hypot(this.x - this._prevX, this.y - this._prevY);
+    const distToPlayer = Math.hypot(player.x - this.x, player.y - this.y);
+    if (distMoved > 0 && distToPlayer < 7 &&
+        this.state !== EnemyState.DEAD && this.state !== EnemyState.PAIN) {
+      this.footstepAccum += distMoved;
+      if (this.footstepAccum >= 0.45) {
+        this.footstepAccum = 0;
+        AudioManager.playFootstep(false);
+      }
+    }
+    this._prevX = this.x;
+    this._prevY = this.y;
   }
 
   takeDamage(amount) {
@@ -118,10 +137,17 @@ export class Enemy {
   _enter(state) {
     this.state = state;
     switch (state) {
-      case EnemyState.ALERT:  this.stateTimer = 0.5; break;
+      case EnemyState.ALERT:
+        this.stateTimer = 0.5;
+        AudioManager.playTrooperAlert();
+        break;
       case EnemyState.SEARCH: this.stateTimer = 3.0; break;
       case EnemyState.PAIN:   this.stateTimer = 0.2; break;
-      case EnemyState.DEAD:   this.stateTimer = 0.8; this.animFrame = 0; break;
+      case EnemyState.DEAD:
+        this.stateTimer = 0.8;
+        this.animFrame  = 0;
+        AudioManager.playTrooperDeath();
+        break;
     }
   }
 
