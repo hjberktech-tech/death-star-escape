@@ -12,6 +12,7 @@ export const Input = {
   mouseDX: 0,
   _mouseDXAccum: 0,
   pointerLocked: false,
+  debugLevel: 0, // 0 = no skip; 1/2/... = jump to that level
 
   init(canvas) {
     document.addEventListener('keydown', e => this._onKey(e, true));
@@ -48,6 +49,10 @@ export const Input = {
       case 'KeyF': case 'Enter':
         if (down) this.interact = true;
         break;
+      // DEBUG level skip (Shift+1, Shift+2, …)
+      case 'Digit1': if (down && e.shiftKey) this.debugLevel = 1; break;
+      case 'Digit2': if (down && e.shiftKey) this.debugLevel = 2; break;
+      case 'Digit3': if (down && e.shiftKey) this.debugLevel = 3; break;
     }
   },
 

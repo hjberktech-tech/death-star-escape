@@ -101,10 +101,32 @@ function update(dt) {
   }
 }
 
+function checkDebugSkip() {
+  const target = Input.debugLevel;
+  if (!target) return;
+  Input.debugLevel = 0;
+  AudioManager.stopMusic();
+  AudioManager.stopVaderBreath();
+  AudioManager.stopPlayerBreath();
+  if (target === 1) {
+    initGame();
+    gameState = GameState.PLAYING;
+    AudioManager.init();
+    AudioManager.playMusic('main');
+  } else if (target === 2) {
+    initLevel2();
+    gameState = GameState.LEVEL2;
+    AudioManager.init();
+  }
+  // add more levels here as they are created
+}
+
 function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
   const dt = lastTime === null ? 0 : Math.min((timestamp - lastTime) / 1000, 0.05);
   lastTime = timestamp;
+
+  checkDebugSkip();
 
   if (gameState === GameState.LEVEL2) {
     updateLevel2(dt);

@@ -130,15 +130,15 @@ export class Asteroid {
 
 class BaseTIE {
   constructor(x, y, pattern) {
-    this.x           = x;
-    this.y           = y;
-    this.pattern     = pattern;
-    this.active      = true;
+    this.x            = x;
+    this.y            = y;
+    this.pattern      = pattern;
+    this.active       = true;
     this.patternTimer = 0;
-    this.fireTimer   = this.fireRate + Math.random() * 1.0; // stagger initial fire
-    this._patternBase = y;
+    this.fireTimer    = 0; // set to actual value in subclass after fireRate is defined
+    this._patternBase  = y;
     this._patternPhase = Math.random() * Math.PI * 2;
-    this._vDir       = Math.random() > 0.5 ? 1 : -1;
+    this._vDir        = Math.random() > 0.5 ? 1 : -1;
   }
 
   update(dt, player, enemyBullets) {
@@ -176,11 +176,12 @@ class BaseTIE {
 export class TIEFighter extends BaseTIE {
   constructor(x, y, pattern) {
     super(x, y, pattern);
-    this.hp       = 2;
-    this.speed    = 120;
-    this.fireRate = 2.5;
-    this.score    = 100;
-    this.type     = 'tiefighter';
+    this.hp        = 2;
+    this.speed     = 120;
+    this.fireRate  = 2.5;
+    this.score     = 100;
+    this.type      = 'tiefighter';
+    this.fireTimer = this.fireRate * Math.random(); // stagger initial fire
   }
 
   _updateMovement(dt, player) {
@@ -238,11 +239,12 @@ export class TIEFighter extends BaseTIE {
 export class TIEInterceptor extends BaseTIE {
   constructor(x, y, pattern) {
     super(x, y, pattern);
-    this.hp       = 3;
-    this.speed    = 160;
-    this.fireRate = 1.8;
-    this.score    = 150;
-    this.type     = 'tieinterceptor';
+    this.hp        = 3;
+    this.speed     = 160;
+    this.fireRate  = 1.8;
+    this.score     = 150;
+    this.type      = 'tieinterceptor';
+    this.fireTimer = this.fireRate * Math.random(); // stagger initial fire
   }
 
   _updateMovement(dt, player) {
