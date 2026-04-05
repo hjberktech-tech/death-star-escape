@@ -49,23 +49,19 @@ const AudioManager = (() => {
     C6:84,
   };
 
-  const BPM = 104;
+  const BPM = 108;
   const B   = 60 / BPM; // seconds per beat
 
   // ── Star Wars Main Theme — Bb major ───────────────────────
-  // Two statements of the A-phrase; clean quarter-note rhythm.
+  // F5 = half note (2 beats), not dotted quarter.  Two A-phrases then loop.
   const MAIN_THEME = [
-    // First statement: "Dun dun dun | DUN-dah | Eb D C | DUN F | Eb D C | DUN(hold)"
+    // First statement
     [N.Bb4,1],[N.Bb4,1],[N.Bb4,1],
-    [N.F5,1.5],[N.Bb4,0.5],
-    [N.Eb5,1],[N.D5,1],[N.C5,1],
-    [N.Bb5,1.5],[N.F5,0.5],
+    [N.F5,2],[N.Bb4,1],
     [N.Eb5,1],[N.D5,1],[N.C5,1],
     [N.Bb5,3],[N.REST,1],
-    // Second statement (starts on F5, same shape)
-    [N.F5,1.5],[N.Bb4,0.5],
-    [N.Eb5,1],[N.D5,1],[N.C5,1],
-    [N.Bb5,1.5],[N.F5,0.5],
+    // Second statement
+    [N.F5,2],[N.Bb4,1],
     [N.Eb5,1],[N.D5,1],[N.C5,1],
     [N.Bb5,3],[N.REST,3],
   ];
@@ -172,32 +168,44 @@ const AudioManager = (() => {
     const osc = ctx.createOscillator();
     const env = ctx.createGain();
     osc.type = 'square';
-    osc.frequency.setValueAtTime(880, t);
-    osc.frequency.exponentialRampToValueAtTime(110, t + 0.18);
-    env.gain.setValueAtTime(0.5, t);
-    env.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    // Classic pew: starts mid-low, drops fast — much more audible than 880Hz
+    osc.frequency.setValueAtTime(520, t);
+    osc.frequency.exponentialRampToValueAtTime(80, t + 0.22);
+    env.gain.setValueAtTime(0.9, t);
+    env.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
     osc.connect(env); env.connect(sfxGain);
-    osc.start(t); osc.stop(t + 0.25);
+    osc.start(t); osc.stop(t + 0.28);
   }
 
-  // ── Trooper alert ─────────────────────────────────────────
+  // ── Trooper alert — "HEY there!" ─────────────────────────
   function playTrooperAlert() {
     if (!ctx) return;
     const now = ctx.currentTime;
-    if (now - lastAlertTime < 0.5) return; // rate-limit simultaneous alerts
+    if (now - lastAlertTime < 0.6) return; // rate-limit simultaneous alerts
     lastAlertTime = now;
-    [440, 660, 880].forEach((f, i) => {
-      const osc = ctx.createOscillator();
-      const env = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.value = f;
-      const st = now + i * 0.07;
-      env.gain.setValueAtTime(0, st);
-      env.gain.linearRampToValueAtTime(0.22, st + 0.01);
-      env.gain.linearRampToValueAtTime(0, st + 0.08);
-      osc.connect(env); env.connect(sfxGain);
-      osc.start(st); osc.stop(st + 0.1);
-    });
+
+    // "HEY" — sharp short exclamation, high-ish pitch with quick decay
+    const osc1 = ctx.createOscillator();
+    const env1 = ctx.createGain();
+    osc1.type = 'square';
+    osc1.frequency.setValueAtTime(720, now);
+    osc1.frequency.linearRampToValueAtTime(640, now + 0.13);
+    env1.gain.setValueAtTime(0.32, now);
+    env1.gain.linearRampToValueAtTime(0, now + 0.15);
+    osc1.connect(env1); env1.connect(sfxGain);
+    osc1.start(now); osc1.stop(now + 0.17);
+
+    // "there" — lower, descending, held briefly
+    const osc2 = ctx.createOscillator();
+    const env2 = ctx.createGain();
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(460, now + 0.16);
+    osc2.frequency.linearRampToValueAtTime(360, now + 0.42);
+    env2.gain.setValueAtTime(0, now + 0.16);
+    env2.gain.linearRampToValueAtTime(0.26, now + 0.18);
+    env2.gain.linearRampToValueAtTime(0, now + 0.44);
+    osc2.connect(env2); env2.connect(sfxGain);
+    osc2.start(now + 0.16); osc2.stop(now + 0.46);
   }
 
   // ── Trooper death scream ──────────────────────────────────
@@ -232,7 +240,7 @@ const AudioManager = (() => {
     const filter = ctx.createBiquadFilter();
     filter.type            = 'bandpass';
     filter.frequency.value = freq;
-    filter.Q.value         = 4;
+    filter.Q.value         = 8;
     const env = ctx.createGain();
     env.gain.setValueAtTime(0, ctx.currentTime);
     env.gain.linearRampToValueAtTime(vol, ctx.currentTime + dur * 0.3);
@@ -289,8 +297,15 @@ const AudioManager = (() => {
   function _playerBreathCycle() {
     if (!playerBreathing) return;
     const low = playerHealthLevel === 'low';
-    _breathPulse(low ? 200 : 300, low ? 0.2 : 0.1, 0.35);
-    playerBreathTimeout = setTimeout(_playerBreathCycle, low ? 900 : 1600);
+    // Short sharp inhale burst
+    _breathPulse(low ? 350 : 450, low ? 0.22 : 0.12, 0.12);
+    // Exhale burst slightly after, longer than inhale
+    setTimeout(() => {
+      if (!playerBreathing) return;
+      _breathPulse(low ? 280 : 380, low ? 0.18 : 0.09, 0.18);
+    }, 180);
+    // Next breath after a clear gap
+    playerBreathTimeout = setTimeout(_playerBreathCycle, low ? 1100 : 2200);
   }
 
   function stopPlayerBreath() {
