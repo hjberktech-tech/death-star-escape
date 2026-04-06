@@ -70,6 +70,7 @@ export function updateLevel2(dt) {
   if (progress >= 0.86 && !bossSpawned) {
     bossSpawned = true;
     boss = new ImperialCruiser();
+    boss._onMissileLaunch = () => AudioManager.playMissileLaunch();
     AudioManager.playMusic('imperial');
   }
 
@@ -78,7 +79,7 @@ export function updateLevel2(dt) {
   for (const e of enemies) e.update(dt, player2, enemyBullets);
   enemies = enemies.filter(e => e.active);
 
-  for (const b of enemyBullets) b.update(dt);
+  for (const b of enemyBullets) b.update(dt, player2);
   enemyBullets = enemyBullets.filter(b => b.active);
 
   if (boss) {
@@ -156,10 +157,14 @@ export function renderLevel2(ctx) {
   for (const e of enemies) e.render(ctx);
 
   for (const b of enemyBullets) {
-    ctx.fillStyle = '#ff4444';
-    ctx.fillRect(b.x - 7, b.y - 2, 14, 4);
-    ctx.fillStyle = '#ffaaaa';
-    ctx.fillRect(b.x - 5, b.y - 1, 10, 2);
+    if (b.render) {
+      b.render(ctx);
+    } else {
+      ctx.fillStyle = '#ff4444';
+      ctx.fillRect(b.x - 7, b.y - 2, 14, 4);
+      ctx.fillStyle = '#ffaaaa';
+      ctx.fillRect(b.x - 5, b.y - 1, 10, 2);
+    }
   }
 
   if (boss) boss.render(ctx);

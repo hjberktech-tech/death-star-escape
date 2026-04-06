@@ -1,8 +1,58 @@
 // js/level2/boss2.js — Imperial Cruiser boss for Level 2
 
 import { SCREEN_W, SCREEN_H } from '../constants.js';
-import { drawImperialCruiser, drawTurret, drawReactor } from './assets2.js';
+import { drawImperialCruiser, drawTurret, drawReactor, drawHomingMissile } from './assets2.js';
 import { EnemyBullet, Explosion } from './enemies2.js';
+import AudioManager from '../audio.js';
+
+// ── Homing Missile ────────────────────────────────────────────────────────────
+
+const MISSILE_SPEED    = 150;
+const MISSILE_TURNRATE = 1.8; // rad/s
+
+class HomingMissile {
+  constructor(x, y) {
+    this.x        = x;
+    this.y        = y;
+    // Launch leftward
+    this.vx       = -MISSILE_SPEED;
+    this.vy       = (Math.random() - 0.5) * 60;
+    this.active   = true;
+    this.isMissile = true;
+    this.life     = 9;
+    this.angle    = Math.atan2(this.vy, this.vx);
+  }
+
+  update(dt, player) {
+    this.life -= dt;
+    if (this.life <= 0) { this.active = false; return; }
+
+    if (player && !player.dead) {
+      const desired = Math.atan2(player.y - this.y, player.x - this.x);
+      let diff = desired - this.angle;
+      while (diff >  Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      const maxTurn = MISSILE_TURNRATE * dt;
+      this.angle += Math.max(-maxTurn, Math.min(maxTurn, diff));
+    }
+
+    this.vx = Math.cos(this.angle) * MISSILE_SPEED;
+    this.vy = Math.sin(this.angle) * MISSILE_SPEED;
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+
+    if (this.x < -120 || this.x > SCREEN_W + 120 ||
+        this.y < -120 || this.y > SCREEN_H + 120) {
+      this.active = false;
+    }
+  }
+
+  render(ctx) {
+    drawHomingMissile(ctx, this.x, this.y, this.angle);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const TARGET_X   = SCREEN_W * 0.62; // ~595
 const CRUISER_W  = 300;
@@ -64,6 +114,9 @@ export class ImperialCruiser {
     this.defeatTimer = 0;
     this.explosions  = [];
 
+    // Phase 2 (reactor exposed): homing missiles
+    this.missiles      = [];
+    this.missileTimer  = 2.5; // first missile fires after 2.5s
     this.phase2 = false;
   }
 
@@ -98,13 +151,19 @@ export class ImperialCruiser {
       }
     }
 
-    // Slow drift on Y axis
+    // Drift — more aggressive when all turrets are down (reactor exposed)
     if (this.entered) {
       this.driftTimer += dt;
-      this.y = this.driftBase + Math.sin(this.driftTimer * 0.3) * 20;
+      if (this.allTurretsDown) {
+        // Phase 2: big sweeping Y drift + X oscillation
+        this.y = this.driftBase + Math.sin(this.driftTimer * 0.9) * 70;
+        this.x = TARGET_X     + Math.sin(this.driftTimer * 0.45 + 1.0) * 40;
+      } else {
+        this.y = this.driftBase + Math.sin(this.driftTimer * 0.3) * 20;
+      }
     }
 
-    // Phase 2 check
+    // Phase 2 check (turrets < 50% HP — turrets fire faster)
     if (!this.phase2 && this.totalHp < this.totalMaxHp * 0.5) {
       this.phase2 = true;
     }
@@ -184,6 +243,32 @@ export class ImperialCruiser {
       }
     }
 
+    // Phase 2 reactor — launch homing missiles when turrets are all down
+    if (this.allTurretsDown && this.reactorHp > 0) {
+      this.missileTimer -= dt;
+      if (this.missileTimer <= 0) {
+        this.missileTimer = this.phase2 ? 2.0 : 3.2;
+        const launchX = this.x - this.w * 0.35;
+        const launchY = this.y + (Math.random() - 0.5) * this.h * 0.5;
+        this.missiles.push(new HomingMissile(launchX, launchY));
+        this._onMissileLaunch?.();
+      }
+    }
+
+    // Update homing missiles (pass player for homing)
+    for (const m of this.missiles) m.update(dt, player);
+    this.missiles = this.missiles.filter(m => m.active);
+
+    // Missile vs player collision
+    for (const m of this.missiles) {
+      if (!m.active) continue;
+      if (Math.hypot(m.x - player.x, m.y - player.y) < 22) {
+        m.active = false;
+        this.explosions.push(new Explosion(m.x, m.y, 1.8));
+        if (player.takeDamage?.()) AudioManager.playShieldHit();
+      }
+    }
+
     // Update explosion effects
     for (const ex of this.explosions) ex.update(dt);
     this.explosions = this.explosions.filter(ex => !ex.done);
@@ -198,8 +283,8 @@ export class ImperialCruiser {
     for (const ex of this.explosions) ex.render(ctx);
 
     if (!this.defeated) {
-      // Main ship hull
-      drawImperialCruiser(ctx, this.x, this.y, this.w, this.h, this.phase2);
+      // Main ship hull — show phase2 damage skin when turrets are all down
+      drawImperialCruiser(ctx, this.x, this.y, this.w, this.h, this.allTurretsDown || this.phase2);
 
       // Draw turrets
       for (const turret of this.turrets) {
@@ -216,5 +301,8 @@ export class ImperialCruiser {
         drawReactor(ctx, rx, ry, REACTOR_RADIUS, this.reactorFlash > 0);
       }
     }
+
+    // Draw homing missiles
+    for (const m of this.missiles) m.render(ctx);
   }
 }

@@ -382,6 +382,35 @@ const AudioManager = (() => {
     osc.start(t); osc.stop(t + 0.27);
   }
 
+  // ── Missile Launch (Level 2) ─────────────────────────────
+  function playMissileLaunch() {
+    if (!ctx) return;
+    const t = ctx.currentTime + 0.01;
+    // Rising noise swoosh
+    const src    = _noise(0.5);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(80, t);
+    filter.frequency.linearRampToValueAtTime(700, t + 0.4);
+    filter.Q.value = 2.5;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.4, t);
+    env.gain.linearRampToValueAtTime(0.65, t + 0.18);
+    env.gain.linearRampToValueAtTime(0, t + 0.5);
+    src.connect(filter); filter.connect(env); env.connect(masterGain);
+    src.start(t); src.stop(t + 0.55);
+    // Low thud kick
+    const osc  = ctx.createOscillator();
+    const env2 = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(120, t);
+    osc.frequency.linearRampToValueAtTime(40, t + 0.15);
+    env2.gain.setValueAtTime(0.5, t);
+    env2.gain.linearRampToValueAtTime(0, t + 0.18);
+    osc.connect(env2); env2.connect(masterGain);
+    osc.start(t); osc.stop(t + 0.2);
+  }
+
   // ── Shield Hit (Level 2) ──────────────────────────────────
   function playShieldHit() {
     if (!ctx) return;
@@ -422,7 +451,7 @@ const AudioManager = (() => {
     startVaderBreath, stopVaderBreath, updateVaderBreathPhase,
     updatePlayerBreath, stopPlayerBreath,
     playFootstep, playPickup,
-    playExplosion, playShieldHit,
+    playExplosion, playShieldHit, playMissileLaunch,
   };
 })();
 

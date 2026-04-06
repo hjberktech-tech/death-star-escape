@@ -218,126 +218,151 @@ export function drawTIEInterceptor(ctx, x, y) {
   ctx.restore();
 }
 
-// Draw an irregular asteroid polygon, seeded for consistent shape
+// Draw an 8-bit pixel-art asteroid, seeded for consistent shape
 export function drawAsteroid(ctx, x, y, r, angle, seed) {
+  const PS = 4; // pixel block size
+  const PAL = ['#3e3428', '#4a4030', '#5c5040', '#6a5c44', '#7a6a50'];
+
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
 
-  // Generate vertices using seed
-  const numPts = 9;
-  const pts = [];
-  for (let i = 0; i < numPts; i++) {
-    const baseAngle = (i / numPts) * Math.PI * 2;
-    // Pseudo-random radius variation based on seed
-    const hash = Math.sin(seed * 9301 + i * 49297 + 233720) * 0.5 + 0.5;
-    const rr = r * (0.65 + hash * 0.45);
-    pts.push({ x: Math.cos(baseAngle) * rr, y: Math.sin(baseAngle) * rr });
+  const gridR = Math.ceil(r / PS);
+  for (let gy = -gridR; gy <= gridR; gy++) {
+    for (let gx = -gridR; gx <= gridR; gx++) {
+      const d = Math.hypot(gx, gy);
+      if (d > gridR) continue;
+      // Irregular edge: skip some border pixels based on seed
+      const hash = Math.sin(seed * 127.1 + gx * 311.7 + gy * 74.3) * 0.5 + 0.5;
+      if (d / gridR > 0.72 && hash < 0.55) continue;
+      // Shading: top-left pixels are lighter
+      const shadeIdx = Math.max(0, Math.min(4, Math.round(2.5 - (gx + gy) / Math.max(1, gridR) * 1.2)));
+      ctx.fillStyle = PAL[shadeIdx];
+      ctx.fillRect(gx * PS - PS / 2, gy * PS - PS / 2, PS, PS);
+    }
   }
-
-  // Main body fill
-  const grad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.1, 0, 0, r);
-  grad.addColorStop(0, '#667055');
-  grad.addColorStop(0.6, '#4a5040');
-  grad.addColorStop(1, '#2a2e22');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x, pts[0].y);
-  for (let i = 1; i < numPts; i++) ctx.lineTo(pts[i].x, pts[i].y);
-  ctx.closePath();
-  ctx.fill();
-
-  // Dark edge stroke
-  ctx.strokeStyle = '#1a1e14';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Crater details
-  const craterSeed1 = Math.sin(seed * 1234.5) * 0.5 + 0.5;
-  const craterSeed2 = Math.sin(seed * 5678.9) * 0.5 + 0.5;
-  const cr1 = { cx: (craterSeed1 - 0.5) * r * 0.6, cy: (craterSeed2 - 0.5) * r * 0.6, r: r * 0.18 };
-  ctx.strokeStyle = '#1e2218';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(cr1.cx, cr1.cy, cr1.r, 0, Math.PI * 2);
-  ctx.stroke();
-
-  const craterSeed3 = Math.sin(seed * 2345.6) * 0.5 + 0.5;
-  const craterSeed4 = Math.sin(seed * 6789.0) * 0.5 + 0.5;
-  const cr2 = { cx: (craterSeed3 - 0.5) * r * 0.5, cy: (craterSeed4 - 0.5) * r * 0.5, r: r * 0.12 };
-  ctx.beginPath();
-  ctx.arc(cr2.cx, cr2.cy, cr2.r, 0, Math.PI * 2);
-  ctx.stroke();
 
   ctx.restore();
 }
 
-// Draw Imperial Cruiser — large wedge pointing LEFT, engine glow on right
+// Draw Imperial Cruiser — 8-bit pixel-art wedge pointing LEFT, engine glow on right
 export function drawImperialCruiser(ctx, x, y, w, h, phase2 = false) {
+  const PS = 6; // pixel block size
   ctx.save();
   ctx.translate(x, y);
 
-  // Main wedge hull (nose pointing left = negative x)
-  ctx.fillStyle = '#3d4a55';
-  ctx.beginPath();
-  ctx.moveTo(-w / 2, 0);          // nose tip (leftmost)
-  ctx.lineTo(w / 2, -h / 2);      // top-right
-  ctx.lineTo(w / 2, h / 2);       // bottom-right
-  ctx.closePath();
-  ctx.fill();
+  const hw = w / 2;
+  const hh = h / 2;
 
-  // Hull plating details
-  ctx.strokeStyle = '#506070';
-  ctx.lineWidth = 1.5;
-  // Horizontal lines across the hull
-  for (let i = 1; i < 4; i++) {
-    const frac = i / 4;
-    const leftX = -w / 2 + (w * frac);
-    const halfH = (h / 2) * frac;
-    ctx.beginPath();
-    ctx.moveTo(leftX, -halfH);
-    ctx.lineTo(leftX, halfH);
-    ctx.stroke();
+  // Color palette: darker in phase2 (battle damage)
+  const PAL = phase2
+    ? ['#1a1e24', '#2a3038', '#3a4048', '#4a5058', '#3a5060']
+    : ['#1a2028', '#2d3a45', '#3d4a55', '#4d5a65', '#5d7080'];
+
+  // Draw wedge row by row — nose at (-hw, 0), back at (+hw, ±hh)
+  // At column gx, the half-height = (gx + hw) / w * hh
+  // So row gy is inside if Math.abs(gy_center) <= halfH at that gx
+  for (let gy = -hh; gy < hh; gy += PS) {
+    const rowCY = gy + PS / 2;
+    const absY  = Math.abs(rowCY);
+    // Leftmost gx where this row enters the wedge
+    const minGX    = (absY / hh) * w - hw;
+    const startGX  = Math.ceil(minGX / PS) * PS;
+
+    for (let gx = startGX; gx < hw; gx += PS) {
+      const progress = (gx + hw) / w; // 0 = nose tip, 1 = back
+      const hash     = Math.sin(gx * 7.3 + gy * 13.1) * 0.5 + 0.5;
+      let ci;
+      if (progress < 0.22)        ci = 4; // bright nose highlight
+      else if (hash < 0.08)       ci = 0; // dark panel detail pixel
+      else if (rowCY < 0)         ci = 2; // upper hull slightly lighter
+      else                        ci = 1; // lower hull
+      ctx.fillStyle = PAL[ci];
+      ctx.fillRect(gx, gy, PS, PS);
+    }
   }
-  // Top edge highlight
-  ctx.strokeStyle = '#607888';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(-w / 2, 0);
-  ctx.lineTo(w / 2, -h / 2);
-  ctx.stroke();
 
-  // Bridge tower on upper portion
-  const towerX = w / 4;
-  const towerY = -h / 4;
-  ctx.fillStyle = '#4a5a66';
-  ctx.fillRect(towerX - 12, towerY - 18, 24, 16);
-  ctx.fillStyle = '#5a6a77';
-  ctx.fillRect(towerX - 8, towerY - 22, 16, 6);
+  // Bridge tower — pixel blocks
+  const tX = Math.round(hw / 2);
+  const tY = -Math.round(hh / 2);
+  ctx.fillStyle = PAL[3];
+  for (let ty = tY - 18; ty < tY; ty += PS) {
+    for (let tx = tX - 12; tx < tX + 12; tx += PS) {
+      ctx.fillRect(tx, ty, PS, PS);
+    }
+  }
+  // Tower top cap
+  ctx.fillStyle = PAL[4];
+  for (let tx = tX - 8; tx < tX + 8; tx += PS) {
+    ctx.fillRect(tx, tY - 24, PS, PS);
+    ctx.fillRect(tx, tY - 18, PS, PS);
+  }
   // Tower windows
   ctx.fillStyle = '#aaccee';
   for (let i = 0; i < 4; i++) {
-    ctx.fillRect(towerX - 9 + i * 5, towerY - 14, 3, 2);
+    ctx.fillRect(tX - 8 + i * 4, tY - 10, 3, 2);
   }
 
-  // Engine glow on right side
-  const engineGlow = phase2 ? '#ff6600' : '#4488ff';
-  const engineGlow2 = phase2 ? '#ffaa44' : '#88bbff';
-  ctx.fillStyle = engineGlow;
-  ctx.beginPath();
-  ctx.ellipse(w / 2, 0, 12, h * 0.3, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = engineGlow2;
-  ctx.beginPath();
-  ctx.ellipse(w / 2, 0, 6, h * 0.15, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // Engine glow — pixel rows approximating an oval
+  const ec1 = phase2 ? '#ff5500' : '#3377ff';
+  const ec2 = phase2 ? '#ffaa33' : '#77aaff';
+  const ENGINE_ROWS = [
+    { dy: -24, bw: 4 }, { dy: -18, bw: 7 }, { dy: -12, bw: 10 }, { dy: -6, bw: 12 },
+    { dy:   0, bw: 12 }, { dy:  6, bw: 12 }, { dy:  12, bw: 10 }, { dy:  18, bw: 7 }, { dy:  24, bw: 4 },
+  ];
+  for (const row of ENGINE_ROWS) {
+    ctx.fillStyle = ec1;
+    ctx.fillRect(hw - row.bw, row.dy, row.bw, PS);
+    if (row.bw >= 8) {
+      ctx.fillStyle = ec2;
+      ctx.fillRect(hw - row.bw + 2, row.dy + 1, row.bw - 4, PS - 2);
+    }
+  }
 
-  // Phase 2 damage marks
+  // Phase 2 damage blotches — orange/red pixel clusters
   if (phase2) {
-    ctx.fillStyle = 'rgba(255,100,0,0.4)';
-    ctx.beginPath(); ctx.arc(-w / 4, h * 0.1, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(0, -h * 0.2, 6, 0, Math.PI * 2); ctx.fill();
+    for (let i = 0; i < 10; i++) {
+      const hx = Math.sin(i * 347.1) * 0.5 + 0.5;
+      const hy = Math.sin(i * 911.3) * 0.5 + 0.5;
+      const dx = (hx - 0.5) * w * 0.55;
+      const dy = (hy - 0.5) * h * 0.55;
+      // Only paint pixels that are inside the wedge
+      const neededX = (Math.abs(dy) / hh) * w - hw;
+      if (dx > neededX) {
+        ctx.fillStyle = i % 3 === 0 ? '#ff3300' : '#ff7700';
+        ctx.fillRect(Math.round(dx / PS) * PS, Math.round(dy / PS) * PS, PS * 2, PS * 2);
+      }
+    }
   }
+
+  ctx.restore();
+}
+
+// Draw a homing missile — 8-bit pixel art torpedo, oriented by angle
+export function drawHomingMissile(ctx, x, y, angle) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  // Body
+  ctx.fillStyle = '#cc2200';
+  ctx.fillRect(-12, -4, 20, 8);
+  // Nose cone
+  ctx.fillStyle = '#ff4400';
+  ctx.fillRect(-16, -2, 4, 4);
+  ctx.fillStyle = '#ffaa00';
+  ctx.fillRect(-18, -1, 2, 2);
+  // Tail fins
+  ctx.fillStyle = '#881100';
+  ctx.fillRect(-10, -7, 5, 3);
+  ctx.fillRect(-10,  4, 5, 3);
+  // Exhaust plume — three pixel layers
+  ctx.fillStyle = '#ff8800';
+  ctx.fillRect(8,  -3, 6, 6);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(14, -2, 5, 4);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(19, -1, 3, 2);
 
   ctx.restore();
 }
