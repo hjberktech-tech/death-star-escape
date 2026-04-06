@@ -619,6 +619,44 @@ function drawBuilding(ctx, x, groundY, w, h, variant) {
   }
 }
 
+// ── Cover obstacles ───────────────────────────────────────────────────────────
+export function drawCrate(ctx, x, groundY) {
+  const W = 28, H = 28;
+  const bx = Math.round(x), by = groundY - H;
+  px(ctx, bx,       by,   W,   H,   '#7a5520');
+  px(ctx, bx,       by,   W,   4,   '#aa8040'); // top highlight
+  px(ctx, bx,       by,   4,   H,   '#9a7030'); // left face
+  px(ctx, bx+W-4,   by,   4,   H,   '#4a3010'); // right shadow
+  px(ctx, bx+11,    by,   6,   H,   '#5a3a10'); // vertical plank
+  px(ctx, bx,       by+11, W,  6,   '#5a3a10'); // horizontal plank
+  px(ctx, bx+2,     by+2,  4,  4,   '#cc9930'); // corner bolts
+  px(ctx, bx+W-6,   by+2,  4,  4,   '#cc9930');
+  px(ctx, bx+2,     by+H-6, 4, 4,   '#cc9930');
+  px(ctx, bx+W-6,   by+H-6, 4, 4,   '#cc9930');
+}
+
+export function drawLowWall(ctx, x, groundY, w = 55, h = 32) {
+  const bx = Math.round(x), by = groundY - h;
+  px(ctx, bx,       by,   w,   h,   '#c4a060'); // sandstone
+  px(ctx, bx,       by,   w,   4,   '#e0c080'); // top highlight
+  px(ctx, bx,       by,   4,   h,   '#d4b070'); // left face
+  px(ctx, bx+w-5,   by,   5,   h,   '#8a6030'); // right shadow
+  px(ctx, bx+4,     by+12, w-8, 2,  '#b09050'); // brick joints
+  px(ctx, bx+4,     by+22, w-8, 2,  '#b09050');
+  px(ctx, bx+Math.floor(w/2), by+4,  2, 8, '#b09050');
+  px(ctx, bx+Math.floor(w/4), by+14, 2, 8, '#b09050');
+  px(ctx, bx+Math.floor(3*w/4), by+14, 2, 8, '#b09050');
+}
+
+export function drawPillar(ctx, x, groundY, h = 70) {
+  const W = 16, bx = Math.round(x), by = groundY - h;
+  px(ctx, bx-3, by,        W+6, 6,  '#d4b878'); // capital top
+  px(ctx, bx-3, by,        W+6, 2,  '#f0d890'); // highlight
+  px(ctx, bx,   by+6,      W,   h-12, '#c4a060'); // shaft
+  px(ctx, bx+W-4, by+6,    4,   h-12, '#8a6030'); // shaft shadow
+  px(ctx, bx-3, groundY-6, W+6, 6,  '#d4b878'); // base
+}
+
 // ── Platform tile ─────────────────────────────────────────────────────────────
 export function drawPlatform(ctx, screenX, y, w) {
   // Stone/sandstone ledge

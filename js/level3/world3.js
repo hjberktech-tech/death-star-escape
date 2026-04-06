@@ -2,11 +2,11 @@
 
 import { SCREEN_W, SCREEN_H } from '../constants.js';
 import { drawBackground3, drawBuildings, drawPlatform, drawCantinaEntrance,
-         drawMillenniumFalcon } from './assets3.js';
+         drawMillenniumFalcon, drawCrate, drawLowWall, drawPillar } from './assets3.js';
 
 export const GROUND_Y  = 450;
 export const WORLD_W   = 4400;
-const CANTINA_WORLD_X  = 2660;  // world x of cantina door centre
+const CANTINA_WORLD_X  = 2590;  // world x of cantina door centre (building 2510 + w/2 80)
 const FALCON_WORLD_X   = 3850;  // world x of Millennium Falcon
 
 // ── Platform list  { x, y, w }  y = top of platform surface ─────────────────
@@ -95,6 +95,30 @@ const BUILDING_DATA = [
   { worldX: 3540, w: 380, h: 70,  variant: 2, parallax: 1.0 },
 ];
 
+// ── Obstacle / cover layout  { x, w, h, type }  ──────────────────────────────
+// type: 'crate' | 'wall' | 'pillar'   h = height above ground
+const OBSTACLE_DATA = [
+  { x: 870,  w: 55, h: 32, type: 'wall'   },
+  { x: 1050, w: 28, h: 28, type: 'crate'  },
+  { x: 1210, w: 16, h: 70, type: 'pillar' },
+  { x: 1340, w: 55, h: 32, type: 'wall'   },
+  { x: 1490, w: 28, h: 28, type: 'crate'  },
+  { x: 1630, w: 28, h: 28, type: 'crate'  },
+  { x: 1770, w: 55, h: 32, type: 'wall'   },
+  { x: 1920, w: 16, h: 70, type: 'pillar' },
+  { x: 2060, w: 55, h: 32, type: 'wall'   },
+  { x: 2190, w: 28, h: 28, type: 'crate'  },
+  { x: 2340, w: 28, h: 28, type: 'crate'  },
+  { x: 2480, w: 55, h: 32, type: 'wall'   },
+  // Post-cantina
+  { x: 2750, w: 28, h: 28, type: 'crate'  },
+  { x: 2880, w: 55, h: 32, type: 'wall'   },
+  { x: 3030, w: 16, h: 70, type: 'pillar' },
+  { x: 3180, w: 28, h: 28, type: 'crate'  },
+  { x: 3330, w: 55, h: 32, type: 'wall'   },
+  { x: 3470, w: 28, h: 28, type: 'crate'  },
+];
+
 // ── World class ───────────────────────────────────────────────────────────────
 
 export class World3 {
@@ -105,6 +129,7 @@ export class World3 {
     this.FALCON_X      = FALCON_WORLD_X;
     this.platforms     = PLATFORM_DATA;
     this.buildings     = BUILDING_DATA;
+    this.obstacles     = OBSTACLE_DATA;
     this._cantinaOpen  = false; // set true after cutscene so player can't re-trigger
   }
 
@@ -137,6 +162,20 @@ export class World3 {
   get cantinaTriggered() { return this._cantinaOpen; }
   set cantinaTriggered(v) { this._cantinaOpen = v; }
 
+  // Deactivates any bullets (world coords) that intersect an obstacle.
+  stopBulletsAtObstacles(bullets) {
+    for (const b of bullets) {
+      if (!b.active) continue;
+      for (const o of OBSTACLE_DATA) {
+        if (b.x >= o.x && b.x <= o.x + o.w &&
+            b.y >= GROUND_Y - o.h - 4 && b.y <= GROUND_Y + 4) {
+          b.active = false;
+          break;
+        }
+      }
+    }
+  }
+
   render(ctx, cameraX) {
     const progress = cameraX / (WORLD_W - SCREEN_W);
 
@@ -151,6 +190,15 @@ export class World3 {
       const sx = p.x - cameraX;
       if (sx > SCREEN_W + 20 || sx + p.w < -20) continue;
       drawPlatform(ctx, sx, p.y, p.w);
+    }
+
+    // Obstacles / cover
+    for (const o of OBSTACLE_DATA) {
+      const sx = o.x - cameraX;
+      if (sx > SCREEN_W + 20 || sx + o.w < -20) continue;
+      if (o.type === 'crate')  drawCrate(ctx, sx, GROUND_Y);
+      else if (o.type === 'pillar') drawPillar(ctx, sx, GROUND_Y, o.h);
+      else                    drawLowWall(ctx, sx, GROUND_Y, o.w, o.h);
     }
 
     // Cantina entrance indicator (before triggered)

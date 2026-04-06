@@ -101,6 +101,10 @@ export function updateLevel3(dt) {
   cameraX = Math.max(0, Math.min(world.WORLD_W - SCREEN_W,
             player.x - SCREEN_W * 0.35));
 
+  // Stop bullets at obstacles (both player and enemy)
+  world.stopBulletsAtObstacles(player.bullets);
+  for (const ch of characters.all) world.stopBulletsAtObstacles(ch.bullets);
+
   // Bullet collision: player → characters
   const scoreChange = characters.checkBulletHits(player.bullets);
   if (scoreChange !== 0) {

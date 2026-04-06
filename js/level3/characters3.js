@@ -11,6 +11,12 @@ const BULLET_SPEED  = 380; // px/s enemy bullets
 const FIRE_RANGE    = 320; // px — enemy starts shooting
 const ALERT_RANGE   = 380; // px — enemy wakes up
 
+// Small indicator dot drawn above a character's head
+function _indicator(ctx, sx, feetY, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(sx - 3, feetY - 62, 6, 6);
+}
+
 // ── Enemy bullet (horizontal only) ───────────────────────────────────────────
 class EnemyBullet3 {
   constructor(x, y, facing) {
@@ -163,6 +169,7 @@ class Stormtrooper extends Character3 {
       ctx.restore();
       return;
     }
+    _indicator(ctx, sx, this.y, '#ff3322');
     drawStormtrooper(ctx, sx, this.y, this.facing, this.walkFrame, this.alerted);
     this.renderBullets(ctx, cameraX);
   }
@@ -229,6 +236,7 @@ class BountyHunter extends Character3 {
       ctx.restore();
       return;
     }
+    _indicator(ctx, sx, this.y, '#ff3322');
     drawBountyHunter(ctx, sx, this.y, this.facing, this.walkFrame);
     this.renderBullets(ctx, cameraX);
   }
@@ -290,6 +298,7 @@ class Officer extends Character3 {
       ctx.restore();
       return;
     }
+    _indicator(ctx, sx, this.y, '#ff3322');
     drawOfficer(ctx, sx, this.y, this.facing, this.walkFrame);
     this.renderBullets(ctx, cameraX);
   }
@@ -329,6 +338,7 @@ class Civilian extends Character3 {
       ctx.restore();
       return;
     }
+    _indicator(ctx, sx, this.y, '#33ff55');
     drawCivilian(ctx, sx, this.y, this.facing, this.walkFrame, this.variant);
   }
 }
@@ -365,6 +375,7 @@ class RebelNPC extends Character3 {
       ctx.restore();
       return;
     }
+    _indicator(ctx, sx, this.y, '#33ff55');
     drawRebelNPC(ctx, sx, this.y, this.facing, this.walkFrame);
   }
 }
