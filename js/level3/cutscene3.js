@@ -19,23 +19,25 @@ const LINES = [
 
 export class Cutscene3 {
   constructor() {
-    this.active      = false;
-    this.lineIdx     = 0;
-    this.talkTimer   = 0;
-    this.talkFrame   = 0;
-    this.gestureFrame = 0;
-    this.gestureTimer = 0;
-    this.done        = false;
-    this._slideY     = SCREEN_H; // panel slides up from bottom
-    this._slideTarget = PANEL_Y;
+    this.active           = false;
+    this.lineIdx          = 0;
+    this.talkTimer        = 0;
+    this.talkFrame        = 0;
+    this.gestureFrame     = 0;
+    this.gestureTimer     = 0;
+    this.done             = false;
+    this._slideY          = SCREEN_H;
+    this._slideTarget     = PANEL_Y;
+    this._advanceCooldown = 0;
   }
 
   start() {
-    this.active       = true;
-    this.lineIdx      = 0;
-    this.done         = false;
-    this._slideY      = SCREEN_H;
-    this._slideTarget = PANEL_Y;
+    this.active         = true;
+    this.lineIdx        = 0;
+    this.done           = false;
+    this._slideY        = SCREEN_H;
+    this._slideTarget   = PANEL_Y;
+    this._advanceCooldown = 0.5; // prevent instant skip on entry
   }
 
   // Returns true when cutscene is fully finished
@@ -60,8 +62,11 @@ export class Cutscene3 {
       this.gestureFrame = (this.gestureFrame + 1) % 4;
     }
 
-    // Advance on interact/shoot
-    if (input.interact || input.shoot) {
+    // Advance on interact/shoot — requires releasing and re-pressing
+    if (this._advanceCooldown > 0) {
+      this._advanceCooldown -= 1 / 60;
+    } else if (input.interact || input.shoot) {
+      this._advanceCooldown = 0.25; // debounce: must release between lines
       this.lineIdx++;
       if (this.lineIdx >= LINES.length) {
         this.active = false;

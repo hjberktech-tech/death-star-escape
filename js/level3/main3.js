@@ -79,7 +79,9 @@ export function updateLevel3(dt) {
   // ── Battle ────────────────────────────────────────────────────────────────
   if (state3 === L3State.BATTLE) {
     battle.update(dt, player);
-    player.update(dt, inp, world);   // still need shoot/jump input in battle
+    player.update(dt, inp, world);   // still need shoot/jump input
+    cameraX = battle.camX;           // lock camera to show Falcon area
+    if (player.shooting) AudioManager.playBlaster();
     if (battle.done) {
       state3 = L3State.WIN;
       AudioManager.stopMusic();
@@ -143,7 +145,7 @@ export function renderLevel3(ctx) {
   player.render(ctx, cameraX);
 
   if (state3 === L3State.BATTLE) {
-    battle.render(ctx);
+    battle.render(ctx, cameraX);
   }
 
   renderHUD3(ctx, player, score, world, lastDt);

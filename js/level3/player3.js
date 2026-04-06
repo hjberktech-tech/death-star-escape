@@ -117,9 +117,8 @@ export class Player3 {
     if (this.dead) return;
     const sx = this.x - cameraX;
 
-    // Blink when invincible
+    // Blink when invincible (skip draw on odd blink intervals)
     if (this.invicTimer > 0 && Math.floor(this.invicTimer * 8) % 2 === 0) {
-      ctx.restore?.();
       return;
     }
 
