@@ -411,7 +411,11 @@ export function drawBullet3(ctx, x, y, facing) {
 export function drawBackground3(ctx, cameraX, progress) {
   const W = 960, H = 540;
 
-  // Sky: Tatooine haze
+  // Fill entire canvas first — prevents trail artifacts in the horizon band
+  ctx.fillStyle = '#c8a860';
+  ctx.fillRect(0, 0, W, H);
+
+  // Sky: Tatooine haze (layered on top)
   ctx.fillStyle = '#c8a860';
   ctx.fillRect(0, 0, W, H * 0.55);
   ctx.fillStyle = '#e8c880';
@@ -452,60 +456,166 @@ export function drawBuildings(ctx, cameraX, buildings) {
   }
 }
 
+// Pixel-art stepped dome — centerX/baseY are the dome's base center point
+function _mossDome(ctx, cx, baseY, dw, lite, base, shad) {
+  cx = Math.round(cx);
+  const steps = [
+    { fw: 1.0, fh: 0.28 },
+    { fw: 0.78, fh: 0.26 },
+    { fw: 0.54, fh: 0.22 },
+    { fw: 0.30, fh: 0.16 },
+    { fw: 0.12, fh: 0.12 },
+  ];
+  const totalH = Math.round(dw * 0.52);
+  let y = baseY;
+  for (const s of steps) {
+    const sw = Math.max(4, Math.round(dw * s.fw));
+    const sh = Math.max(3, Math.round(totalH * s.fh));
+    y -= sh;
+    ctx.fillStyle = base;
+    ctx.fillRect(cx - Math.floor(sw / 2), y, sw, sh);
+    // Top highlight strip
+    ctx.fillStyle = lite;
+    ctx.fillRect(cx - Math.floor(sw / 2), y, sw, Math.max(2, Math.floor(sh * 0.35)));
+    // Right shadow strip
+    ctx.fillStyle = shad;
+    const ssx = Math.floor(sw * 0.72);
+    ctx.fillRect(cx - Math.floor(sw / 2) + ssx, y, sw - ssx, sh);
+  }
+}
+
+// Pixel-art arch doorway (rectangular with bevelled top header)
+function _archDoor(ctx, cx, groundY, dw, dh, wallCol) {
+  cx = Math.round(cx);
+  const dx = cx - Math.floor(dw / 2);
+  // Frame (wall-coloured surround)
+  ctx.fillStyle = wallCol;
+  ctx.fillRect(dx - 4, groundY - dh - 5, dw + 8, dh + 5);
+  // Dark interior
+  ctx.fillStyle = '#1a0a00';
+  ctx.fillRect(dx, groundY - dh, dw, dh);
+  // Stepped arch top (3-step pixel curve)
+  ctx.fillStyle = '#1a0a00';
+  ctx.fillRect(dx + 2, groundY - dh - 4, dw - 4, 4);
+  ctx.fillRect(dx + 4, groundY - dh - 6, dw - 8, 2);
+  // Faint warm glow inside
+  ctx.fillStyle = 'rgba(255,150,60,0.12)';
+  ctx.fillRect(dx + 2, groundY - dh + 4, dw - 4, dh - 8);
+}
+
 function drawBuilding(ctx, x, groundY, w, h, variant) {
   const bx = Math.round(x);
   const by = groundY - h;
-  const SKINS = [
-    { wall: '#d4b878', wall2: '#c8a860', accent: '#a07840' },
-    { wall: '#c8a060', wall2: '#b89050', accent: '#907030' },
-    { wall: '#dfc890', wall2: '#d0b870', accent: '#b09050' },
+
+  // Mos Eisley sandstone palette (3 colour variants)
+  const PALS = [
+    { base: '#d4b878', lite: '#ecdaa0', shad: '#a88848', edge: '#7a6030' },
+    { base: '#c8a868', lite: '#dcc088', shad: '#987030', edge: '#705020' },
+    { base: '#dfc890', lite: '#f0dcb0', shad: '#b09050', edge: '#907040' },
   ];
-  const sk = SKINS[variant % 3];
 
-  // Main wall
-  ctx.fillStyle = sk.wall;
-  ctx.fillRect(bx, by, w, h);
-  // Side shadow
-  ctx.fillStyle = sk.wall2;
-  ctx.fillRect(bx + w - Math.floor(w * 0.25), by, Math.floor(w * 0.25), h);
-
-  // Windows (pixel art — 4px each, every 18px)
-  ctx.fillStyle = '#334455';
-  const winW = 8, winH = 6, winGapX = 18, winGapY = 16;
-  for (let wy = by + 10; wy < groundY - 8; wy += winGapY) {
-    for (let wx = bx + 8; wx < bx + w - winW - 4; wx += winGapX) {
-      ctx.fillRect(wx, wy, winW, winH);
-      // Lit windows (some)
-      const lit = ((wx + wy) * 7 + variant * 31) % 5 < 2;
-      if (lit) {
-        ctx.fillStyle = '#ffeeaa';
-        ctx.fillRect(wx + 1, wy + 1, winW - 2, winH - 2);
-        ctx.fillStyle = '#334455';
-      }
-    }
-  }
-
-  // Dome top (Tatooine style) for wider buildings
-  if (w >= 80 && variant !== 1) {
-    ctx.fillStyle = sk.accent;
-    ctx.fillRect(bx + w/2 - 20, by - 20, 40, 22);
-    ctx.fillRect(bx + w/2 - 14, by - 28, 28, 10);
-    ctx.fillRect(bx + w/2 - 6, by - 34, 12, 8);
-  }
-
-  // Cantina sign (for cantina building variant 99)
+  // ── Cantina building (special) ──────────────────────────────────────────────
   if (variant === 99) {
-    ctx.fillStyle = '#cc2200';
-    ctx.fillRect(bx + w/2 - 36, by + 10, 72, 18);
-    ctx.fillStyle = '#ffaa00';
+    const p = PALS[0];
+    // Main wall
+    ctx.fillStyle = p.base;
+    ctx.fillRect(bx, by, w, h);
+    ctx.fillStyle = p.shad;
+    ctx.fillRect(bx + w - Math.floor(w * 0.2), by, Math.floor(w * 0.2), h);
+    ctx.fillStyle = p.edge;
+    ctx.fillRect(bx, by, 3, h);
+    // Big center dome
+    _mossDome(ctx, bx + w * 0.5, by, w * 0.58, p.lite, p.base, p.shad);
+    // Smaller side dome
+    _mossDome(ctx, bx + w * 0.2, by, w * 0.28, p.lite, p.base, p.shad);
+    // Sign panel
+    ctx.fillStyle = '#5a1a00';
+    ctx.fillRect(bx + w / 2 - 40, by + 12, 80, 20);
+    ctx.fillStyle = '#cc3300';
+    ctx.fillRect(bx + w / 2 - 38, by + 13, 76, 18);
+    ctx.fillStyle = '#ffcc44';
     ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('CANTINA', bx + w/2, by + 23);
-    // Doorway
-    ctx.fillStyle = '#1a0a00';
-    ctx.fillRect(bx + w/2 - 14, groundY - 48, 28, 48);
-    ctx.fillStyle = '#331100';
-    ctx.fillRect(bx + w/2 - 12, groundY - 46, 24, 44);
+    ctx.fillText('CANTINA', bx + w / 2, by + 27);
+    ctx.textAlign = 'left';
+    // Arch doorway
+    _archDoor(ctx, bx + w * 0.5, groundY, 32, 54, p.base);
+    return;
+  }
+
+  const v = variant % 3;
+  const p = PALS[v];
+
+  if (v === 0) {
+    // ── Style A: Single dome building ────────────────────────────────────────
+    ctx.fillStyle = p.base;
+    ctx.fillRect(bx, by, w, h);
+    ctx.fillStyle = p.shad;
+    ctx.fillRect(bx + w - Math.floor(w * 0.22), by, Math.floor(w * 0.22), h);
+    ctx.fillStyle = p.edge;
+    ctx.fillRect(bx, by, 3, h);
+    // Dome
+    _mossDome(ctx, bx + w * 0.5, by, w * 0.52, p.lite, p.base, p.shad);
+    // Small round porthole window
+    if (w > 60) {
+      const wx = bx + Math.floor(w * 0.28), wy = by + Math.floor(h * 0.38);
+      ctx.fillStyle = p.edge;
+      ctx.fillRect(wx - 5, wy - 5, 10, 10);
+      ctx.fillStyle = '#1e2a38';
+      ctx.fillRect(wx - 3, wy - 3, 6, 6);
+    }
+    // Arch door
+    _archDoor(ctx, bx + w * 0.5, groundY, 26, 46, p.base);
+
+  } else if (v === 1) {
+    // ── Style B: Two-dome compound (two connected boxes) ─────────────────────
+    const lw = Math.floor(w * 0.58);
+    const rw = w - lw - 3;
+    const rh = Math.floor(h * 0.68);
+    // Taller left box
+    ctx.fillStyle = p.base;
+    ctx.fillRect(bx, by, lw, h);
+    ctx.fillStyle = p.shad;
+    ctx.fillRect(bx + lw - Math.floor(lw * 0.2), by, Math.floor(lw * 0.2), h);
+    ctx.fillStyle = p.edge;
+    ctx.fillRect(bx, by, 3, h);
+    _mossDome(ctx, bx + lw * 0.5, by, lw * 0.46, p.lite, p.base, p.shad);
+    // Shorter right box
+    const rbx = bx + lw + 3;
+    const rby = groundY - rh;
+    ctx.fillStyle = p.lite;
+    ctx.fillRect(rbx, rby, rw, rh);
+    ctx.fillStyle = p.base;
+    ctx.fillRect(rbx + rw - Math.floor(rw * 0.22), rby, Math.floor(rw * 0.22), rh);
+    _mossDome(ctx, rbx + rw * 0.5, rby, rw * 0.44, p.lite, p.base, p.shad);
+    // Arch door in left box
+    _archDoor(ctx, bx + lw * 0.45, groundY, 24, 44, p.base);
+
+  } else {
+    // ── Style C: Stepped terrace ──────────────────────────────────────────────
+    // Ground level
+    ctx.fillStyle = p.base;
+    ctx.fillRect(bx, by, w, h);
+    ctx.fillStyle = p.shad;
+    ctx.fillRect(bx + w - Math.floor(w * 0.2), by, Math.floor(w * 0.2), h);
+    ctx.fillStyle = p.edge;
+    ctx.fillRect(bx, by, 3, h);
+    // Second level (70% width, centered)
+    const tw = Math.floor(w * 0.7);
+    const tx = bx + Math.floor((w - tw) / 2);
+    const th = Math.floor(h * 0.42);
+    ctx.fillStyle = p.lite;
+    ctx.fillRect(tx, by - th, tw, th);
+    ctx.fillStyle = p.base;
+    ctx.fillRect(tx + tw - Math.floor(tw * 0.2), by - th, Math.floor(tw * 0.2), th);
+    // Parapet lips
+    ctx.fillStyle = p.edge;
+    ctx.fillRect(bx,      by,      w,  4);  // first level parapet top
+    ctx.fillRect(tx,      by - th, tw, 4);  // second level parapet top
+    // Dome on top level
+    _mossDome(ctx, tx + tw * 0.5, by - th, tw * 0.42, p.lite, p.base, p.shad);
+    // Arch door
+    _archDoor(ctx, bx + w * 0.42, groundY, 22, 42, p.base);
   }
 }
 

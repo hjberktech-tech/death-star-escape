@@ -37,18 +37,18 @@ const PLATFORM_DATA = [
 
 // ── Character spawn definitions ───────────────────────────────────────────────
 export const SPAWN_DATA = [
-  // Desert approach
-  { type: 'stormtrooper', x: 380,  patrol: 160 },
-  { type: 'civilian',     x: 280,  patrol: 80,  variant: 2 },
-  { type: 'stormtrooper', x: 590,  patrol: 120 },
-  { type: 'bountyHunter', x: 700,  patrol: 140 },
-  { type: 'civilian',     x: 510,  patrol: 70,  variant: 0 },
+  // Desert approach — first contact at city edge (~700px in, ~4s walk from start)
+  { type: 'civilian',     x: 720,  patrol: 80,  variant: 2 },
+  { type: 'stormtrooper', x: 780,  patrol: 130 },
+  { type: 'civilian',     x: 850,  patrol: 70,  variant: 0 },
+  { type: 'stormtrooper', x: 950,  patrol: 120 },
+  { type: 'bountyHunter', x: 1060, patrol: 140 },
   // City entrance
-  { type: 'stormtrooper', x: 900,  patrol: 140 },
-  { type: 'stormtrooper', x: 1100, patrol: 130 },
-  { type: 'rebelNPC',     x: 1000, patrol: 100 },
-  { type: 'civilian',     x: 840,  patrol: 70,  variant: 1 },
-  { type: 'civilian',     x: 1250, patrol: 60,  variant: 0 },
+  { type: 'stormtrooper', x: 1150, patrol: 140 },
+  { type: 'stormtrooper', x: 1280, patrol: 130 },
+  { type: 'rebelNPC',     x: 1200, patrol: 100 },
+  { type: 'civilian',     x: 1340, patrol: 70,  variant: 1 },
+  { type: 'civilian',     x: 1400, patrol: 60,  variant: 0 },
   // City centre
   { type: 'stormtrooper', x: 1440, patrol: 120 },
   { type: 'stormtrooper', x: 1620, patrol: 150 },
@@ -78,10 +78,7 @@ export const SPAWN_DATA = [
 
 // ── Background building layout ────────────────────────────────────────────────
 const BUILDING_DATA = [
-  // Desert (sparse, small)
-  { worldX: -20,  w: 60,  h: 80,  variant: 2, parallax: 0.8 },
-  { worldX: 200,  w: 80,  h: 100, variant: 0, parallax: 0.8 },
-  // City entrance
+  // City entrance (no buildings in the open desert intro)
   { worldX: 820,  w: 90,  h: 140, variant: 1, parallax: 1.0 },
   { worldX: 940,  w: 120, h: 180, variant: 0, parallax: 1.0 },
   { worldX: 1080, w: 80,  h: 120, variant: 2, parallax: 1.0 },
