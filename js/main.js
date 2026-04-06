@@ -8,6 +8,7 @@ import { Weapon } from './weapons.js';
 import { renderFrame, GameState } from './renderer.js';
 import AudioManager from './audio.js';
 import { initLevel2, updateLevel2, renderLevel2, getState2, L2State } from './level2/main2.js';
+import { initLevel3, updateLevel3, renderLevel3, getState3, L3State } from './level3/main3.js';
 
 const canvas = document.getElementById('game');
 canvas.width  = SCREEN_W;
@@ -117,6 +118,10 @@ function checkDebugSkip() {
     initLevel2();
     gameState = GameState.LEVEL2;
     AudioManager.init();
+  } else if (target === 3) {
+    initLevel3();
+    gameState = GameState.LEVEL3;
+    AudioManager.init();
   }
   // add more levels here as they are created
 }
@@ -131,6 +136,9 @@ function gameLoop(timestamp) {
   if (gameState === GameState.LEVEL2) {
     updateLevel2(dt);
     renderLevel2(ctx);
+  } else if (gameState === GameState.LEVEL3) {
+    updateLevel3(dt);
+    renderLevel3(ctx);
   } else {
     if (gameState === GameState.PLAYING) update(dt);
     renderFrame(ctx, { gameState, player, enemies, boss, weapon, bossActive, pickups });
@@ -158,7 +166,15 @@ canvas.addEventListener('click', () => {
   } else if (gameState === GameState.LEVEL2) {
     const s = getState2();
     if (s === L2State.DEAD) { initLevel2(); }
-    else if (s === L2State.WIN) { initGame(); gameState = GameState.TITLE; AudioManager.stopMusic(); }
+    else if (s === L2State.WIN) {
+      initLevel3();
+      gameState = GameState.LEVEL3;
+      AudioManager.init();
+    }
+  } else if (gameState === GameState.LEVEL3) {
+    const s = getState3();
+    if (s === L3State.DEAD) { initLevel3(); }
+    else if (s === L3State.WIN) { initGame(); gameState = GameState.TITLE; AudioManager.stopMusic(); }
   }
 });
 

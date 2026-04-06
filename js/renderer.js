@@ -10,6 +10,7 @@ export const GameState = {
   DEAD: 'dead',
   WIN: 'win',
   LEVEL2: 'level2',
+  LEVEL3: 'level3',
 };
 
 export function renderFrame(ctx, state) {
