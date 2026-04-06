@@ -43,8 +43,9 @@ class Character3 {
     this.friendly   = false;
     this.fireTimer  = 1 + Math.random() * 1.5;
     this.bullets    = [];
-    this.deathTimer = 0;
     this.dead       = false;
+    this.deathTimer = 0;
+    this.deathVy    = 0;
   }
 
   get halfW() { return 9; }
@@ -59,15 +60,26 @@ class Character3 {
   }
 
   hit(dmg) {
-    if (this.friendly) return 'friendly'; // friendly-fire result
+    if (this.dead)     return null;
+    if (this.friendly) return 'friendly';
     this.hp -= dmg;
     if (this.hp <= 0) {
-      this.hp     = 0;
-      this.dead   = true;
-      this.active = false;
+      this.hp         = 0;
+      this.dead       = true;
+      this.deathTimer = 0.55;
+      this.deathVy    = -200;  // initial upward kick
+      this.bullets    = [];    // drop bullets on death
       return 'killed';
     }
     return 'hit';
+  }
+
+  // Call from subclass update() when dead=true
+  _updateDeath(dt) {
+    this.deathVy    += 480 * dt;  // gravity
+    this.y          += this.deathVy * dt;
+    this.deathTimer -= dt;
+    if (this.deathTimer <= 0) this.active = false;
   }
 
   _updateBullets(dt) {
@@ -95,7 +107,8 @@ class Stormtrooper extends Character3 {
   }
 
   update(dt, player) {
-    if (this.dead || !this.active) return;
+    if (!this.active) return;
+    if (this.dead) { this._updateDeath(dt); return; }
     this._updateBullets(dt);
 
     const dx    = player.x - this.x;
@@ -140,9 +153,16 @@ class Stormtrooper extends Character3 {
   }
 
   render(ctx, cameraX) {
-    if (!this.active && !this.dead) return;
+    if (!this.active) return;
     const sx = this.x - cameraX;
     if (sx < -60 || sx > SCREEN_W + 60) return;
+    if (this.dead) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, this.deathTimer / 0.55);
+      drawStormtrooper(ctx, sx, this.y, this.facing, 0, false);
+      ctx.restore();
+      return;
+    }
     drawStormtrooper(ctx, sx, this.y, this.facing, this.walkFrame, this.alerted);
     this.renderBullets(ctx, cameraX);
   }
@@ -160,7 +180,8 @@ class BountyHunter extends Character3 {
   }
 
   update(dt, player) {
-    if (this.dead || !this.active) return;
+    if (!this.active) return;
+    if (this.dead) { this._updateDeath(dt); return; }
     this._updateBullets(dt);
 
     const dx   = player.x - this.x;
@@ -198,9 +219,16 @@ class BountyHunter extends Character3 {
   }
 
   render(ctx, cameraX) {
-    if (!this.active && !this.dead) return;
+    if (!this.active) return;
     const sx = this.x - cameraX;
     if (sx < -60 || sx > SCREEN_W + 60) return;
+    if (this.dead) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, this.deathTimer / 0.55);
+      drawBountyHunter(ctx, sx, this.y, this.facing, 0);
+      ctx.restore();
+      return;
+    }
     drawBountyHunter(ctx, sx, this.y, this.facing, this.walkFrame);
     this.renderBullets(ctx, cameraX);
   }
@@ -217,7 +245,8 @@ class Officer extends Character3 {
   }
 
   update(dt, player) {
-    if (this.dead || !this.active) return;
+    if (!this.active) return;
+    if (this.dead) { this._updateDeath(dt); return; }
     this._updateBullets(dt);
 
     const dx   = player.x - this.x;
@@ -251,9 +280,16 @@ class Officer extends Character3 {
   }
 
   render(ctx, cameraX) {
-    if (!this.active && !this.dead) return;
+    if (!this.active) return;
     const sx = this.x - cameraX;
     if (sx < -60 || sx > SCREEN_W + 60) return;
+    if (this.dead) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, this.deathTimer / 0.55);
+      drawOfficer(ctx, sx, this.y, this.facing, 0);
+      ctx.restore();
+      return;
+    }
     drawOfficer(ctx, sx, this.y, this.facing, this.walkFrame);
     this.renderBullets(ctx, cameraX);
   }
@@ -271,7 +307,8 @@ class Civilian extends Character3 {
   }
 
   update(dt, player) {
-    if (this.dead || !this.active) return;
+    if (!this.active) return;
+    if (this.dead) { this._updateDeath(dt); return; }
     // Simple patrol wander
     const edge = Math.abs(this.x - this.patrolCX) > this.patrolR;
     if (edge) this.facing = Math.sign(this.patrolCX - this.x) || 1;
@@ -285,6 +322,13 @@ class Civilian extends Character3 {
     if (!this.active) return;
     const sx = this.x - cameraX;
     if (sx < -60 || sx > SCREEN_W + 60) return;
+    if (this.dead) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, this.deathTimer / 0.55);
+      drawCivilian(ctx, sx, this.y, this.facing, 0, this.variant);
+      ctx.restore();
+      return;
+    }
     drawCivilian(ctx, sx, this.y, this.facing, this.walkFrame, this.variant);
   }
 }
@@ -300,7 +344,8 @@ class RebelNPC extends Character3 {
   }
 
   update(dt, player) {
-    if (this.dead || !this.active) return;
+    if (!this.active) return;
+    if (this.dead) { this._updateDeath(dt); return; }
     const edge = Math.abs(this.x - this.patrolCX) > this.patrolR;
     if (edge) this.facing = Math.sign(this.patrolCX - this.x) || 1;
     this.x += this.facing * this.speed * dt;
@@ -313,6 +358,13 @@ class RebelNPC extends Character3 {
     if (!this.active) return;
     const sx = this.x - cameraX;
     if (sx < -60 || sx > SCREEN_W + 60) return;
+    if (this.dead) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, this.deathTimer / 0.55);
+      drawRebelNPC(ctx, sx, this.y, this.facing, 0);
+      ctx.restore();
+      return;
+    }
     drawRebelNPC(ctx, sx, this.y, this.facing, this.walkFrame);
   }
 }
@@ -337,14 +389,14 @@ export class Characters3 {
     }
   }
 
-  // Returns { scoreChange, friendly } for a bullet hit, or null
+  // Returns score delta for player bullet hits this frame
   checkBulletHits(bullets) {
     let total = 0;
     for (const b of bullets) {
       if (!b.active) continue;
       for (const ch of this.all) {
-        if (!ch.active) continue;
-        if (Math.abs(b.x - ch.x) < 22 && Math.abs(b.y - ch.y) < 28) {
+        if (!ch.active || ch.dead) continue;
+        if (Math.abs(b.x - ch.x) < 22 && Math.abs(b.y - ch.y) < 32) {
           b.active = false;
           const result = ch.hit(1);
           if (result === 'killed' || result === 'friendly') {
@@ -359,12 +411,16 @@ export class Characters3 {
     return total;
   }
 
-  // Check enemy bullets vs player — returns true if player was hit
+  // Check enemy bullets vs player — returns true if player was hit.
+  // Uses player body range (feet up to ~50px) so bullets at ground level
+  // don't hit a player standing on a platform above.
   checkEnemyHits(player) {
+    const bodyBot = player.y + 4;
+    const bodyTop = player.y - 50;
     for (const ch of this.all) {
       for (const b of ch.bullets) {
         if (!b.active) continue;
-        if (Math.abs(b.x - player.x) < 18 && Math.abs(b.y - player.y) < 28) {
+        if (Math.abs(b.x - player.x) < 18 && b.y >= bodyTop && b.y <= bodyBot) {
           b.active = false;
           return true;
         }

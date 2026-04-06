@@ -38,42 +38,29 @@ const PLATFORM_DATA = [
 // ── Character spawn definitions ───────────────────────────────────────────────
 export const SPAWN_DATA = [
   // Desert approach — first contact at city edge (~700px in, ~4s walk from start)
-  { type: 'civilian',     x: 720,  patrol: 80,  variant: 2 },
-  { type: 'stormtrooper', x: 780,  patrol: 130 },
-  { type: 'civilian',     x: 850,  patrol: 70,  variant: 0 },
-  { type: 'stormtrooper', x: 950,  patrol: 120 },
-  { type: 'bountyHunter', x: 1060, patrol: 140 },
+  { type: 'civilian',     x: 730,  patrol: 80,  variant: 2 },
+  { type: 'stormtrooper', x: 820,  patrol: 130 },
+  { type: 'bountyHunter', x: 1000, patrol: 140 },
   // City entrance
-  { type: 'stormtrooper', x: 1150, patrol: 140 },
-  { type: 'stormtrooper', x: 1280, patrol: 130 },
-  { type: 'rebelNPC',     x: 1200, patrol: 100 },
-  { type: 'civilian',     x: 1340, patrol: 70,  variant: 1 },
-  { type: 'civilian',     x: 1400, patrol: 60,  variant: 0 },
+  { type: 'stormtrooper', x: 1160, patrol: 130 },
+  { type: 'rebelNPC',     x: 1250, patrol: 90  },
+  { type: 'civilian',     x: 1380, patrol: 70,  variant: 1 },
   // City centre
-  { type: 'stormtrooper', x: 1440, patrol: 120 },
-  { type: 'stormtrooper', x: 1620, patrol: 150 },
-  { type: 'officer',      x: 1780, patrol: 80  },
-  { type: 'stormtrooper', x: 1960, patrol: 130 },
-  { type: 'bountyHunter', x: 1700, patrol: 160 },
-  { type: 'civilian',     x: 1540, patrol: 70,  variant: 2 },
-  { type: 'civilian',     x: 1830, patrol: 60,  variant: 1 },
-  { type: 'rebelNPC',     x: 2080, patrol: 90  },
+  { type: 'stormtrooper', x: 1560, patrol: 130 },
+  { type: 'officer',      x: 1720, patrol: 80  },
+  { type: 'bountyHunter', x: 1880, patrol: 150 },
+  { type: 'civilian',     x: 2000, patrol: 70,  variant: 0 },
   // Pre-cantina
-  { type: 'stormtrooper', x: 2220, patrol: 130 },
-  { type: 'civilian',     x: 2360, patrol: 60,  variant: 0 },
-  { type: 'stormtrooper', x: 2480, patrol: 110 },
+  { type: 'stormtrooper', x: 2200, patrol: 130 },
+  { type: 'stormtrooper', x: 2450, patrol: 110 },
   // Post-cantina
-  { type: 'stormtrooper', x: 2760, patrol: 130 },
-  { type: 'stormtrooper', x: 2940, patrol: 140 },
-  { type: 'bountyHunter', x: 3080, patrol: 160 },
-  { type: 'stormtrooper', x: 3200, patrol: 120 },
-  { type: 'officer',      x: 3320, patrol: 80  },
-  { type: 'civilian',     x: 2820, patrol: 60,  variant: 1 },
-  { type: 'civilian',     x: 3100, patrol: 70,  variant: 2 },
+  { type: 'stormtrooper', x: 2780, patrol: 130 },
+  { type: 'bountyHunter', x: 2980, patrol: 150 },
+  { type: 'officer',      x: 3180, patrol: 80  },
+  { type: 'civilian',     x: 2880, patrol: 60,  variant: 2 },
   // Docking bay guards
-  { type: 'stormtrooper', x: 3500, patrol: 90  },
-  { type: 'stormtrooper', x: 3620, patrol: 70  },
-  { type: 'stormtrooper', x: 3720, patrol: 60  },
+  { type: 'stormtrooper', x: 3520, patrol: 90  },
+  { type: 'stormtrooper', x: 3680, patrol: 70  },
 ];
 
 // ── Background building layout ────────────────────────────────────────────────
