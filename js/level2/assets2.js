@@ -218,40 +218,58 @@ export function drawTIEInterceptor(ctx, x, y) {
   ctx.restore();
 }
 
-// Draw an 8-bit pixel-art asteroid — chunky stone shape, not round
+// Draw an 8-bit pixel-art asteroid — chunky stone, no stray pixels
 export function drawAsteroid(ctx, x, y, r, angle, seed) {
-  const PS = 4; // pixel block size
-  // Stone palette: cool grey-browns, no green tint
-  const PAL = ['#1e1c1a', '#302c28', '#484440', '#5e5a54', '#74706a'];
+  const PS   = 4;
+  const PAL  = ['#1e1c1a', '#302c28', '#484440', '#5e5a54', '#74706a'];
 
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
 
   const gridR = Math.ceil(r / PS);
+  const size  = gridR * 2 + 1;
+
+  // ── 1. Build candidate grid ──────────────────────────────────────────────
+  const filled = new Uint8Array(size * size);
+  const cell = (gx, gy) => (gy + gridR) * size + (gx + gridR);
+
   for (let gy = -gridR; gy <= gridR; gy++) {
     for (let gx = -gridR; gx <= gridR; gx++) {
-      // Use max(abs) = square base, blended slightly with circle for less-sharp corners
-      const dSquare = Math.max(Math.abs(gx), Math.abs(gy)) / gridR;
-      const dCircle = Math.hypot(gx, gy) / gridR;
-      const baseDist = dSquare * 0.65 + dCircle * 0.35;
-      if (baseDist > 1.0) continue;
-
-      // Heavy jagged edge: cut out many border cells for a chunky rock silhouette
+      const dSq  = Math.max(Math.abs(gx), Math.abs(gy)) / gridR; // square base
+      const dCi  = Math.hypot(gx, gy) / gridR;
+      const dist = dSq * 0.65 + dCi * 0.35; // chunky but not spiky
+      if (dist > 1.0) continue;
       const hash = Math.sin(seed * 127.1 + gx * 311.7 + gy * 74.3) * 0.5 + 0.5;
-      if (baseDist > 0.62 && hash < 0.62) continue;
+      if (dist > 0.62 && hash < 0.62) continue; // jagged edge
+      filled[cell(gx, gy)] = 1;
+    }
+  }
 
-      // Hard faceted shading — distinct flat faces like stone, not a smooth gradient
+  // ── 2. Flood-fill from centre — discard any disconnected pixels ──────────
+  const connected = new Uint8Array(size * size);
+  connected[cell(0, 0)] = 1;
+  const queue = [[0, 0]];
+  while (queue.length) {
+    const [cx, cy] = queue.pop();
+    for (const [nx, ny] of [[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]]) {
+      if (nx < -gridR || nx > gridR || ny < -gridR || ny > gridR) continue;
+      const ci = cell(nx, ny);
+      if (filled[ci] && !connected[ci]) { connected[ci] = 1; queue.push([nx, ny]); }
+    }
+  }
+
+  // ── 3. Render connected pixels with hard faceted shading ─────────────────
+  for (let gy = -gridR; gy <= gridR; gy++) {
+    for (let gx = -gridR; gx <= gridR; gx++) {
+      if (!connected[cell(gx, gy)]) continue;
       let ci;
-      if      (gy < -gridR * 0.25)  ci = 4; // top face — lightest
-      else if (gx >  gridR * 0.15)  ci = 1; // right face — darkest
-      else if (gy >  gridR * 0.30)  ci = 2; // bottom face
-      else                           ci = 3; // middle
-
-      // Small noise to break up flat colour bands
+      if      (gy < -gridR * 0.25) ci = 4; // top face — lightest
+      else if (gx >  gridR * 0.15) ci = 1; // right face — darkest
+      else if (gy >  gridR * 0.30) ci = 2; // bottom face
+      else                          ci = 3; // centre
       const noise = Math.sin(seed * 55.3 + gx * 17.1 + gy * 31.4) * 0.5 + 0.5;
       if (noise < 0.18) ci = Math.max(0, ci - 1);
-
       ctx.fillStyle = PAL[ci];
       ctx.fillRect(gx * PS - PS / 2, gy * PS - PS / 2, PS, PS);
     }
