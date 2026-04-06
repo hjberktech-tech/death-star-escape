@@ -8,18 +8,18 @@ import AudioManager from '../audio.js';
 // ── Homing Missile ────────────────────────────────────────────────────────────
 
 const MISSILE_SPEED    = 150;
-const MISSILE_TURNRATE = 1.8; // rad/s
+const MISSILE_TURNRATE = 0.85; // rad/s — lazy homing, can be dodged
 
 class HomingMissile {
   constructor(x, y) {
     this.x        = x;
     this.y        = y;
-    // Launch leftward
-    this.vx       = -MISSILE_SPEED;
-    this.vy       = (Math.random() - 0.5) * 60;
+    // Launch leftward with a strong random vertical spread (drifts wide before homing)
+    this.vy       = (Math.random() - 0.5) * 180;
+    this.vx       = -Math.sqrt(MISSILE_SPEED * MISSILE_SPEED - this.vy * this.vy);
     this.active   = true;
     this.isMissile = true;
-    this.life     = 9;
+    this.life     = 5;
     this.angle    = Math.atan2(this.vy, this.vx);
   }
 

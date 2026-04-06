@@ -218,10 +218,11 @@ export function drawTIEInterceptor(ctx, x, y) {
   ctx.restore();
 }
 
-// Draw an 8-bit pixel-art asteroid, seeded for consistent shape
+// Draw an 8-bit pixel-art asteroid — chunky stone shape, not round
 export function drawAsteroid(ctx, x, y, r, angle, seed) {
   const PS = 4; // pixel block size
-  const PAL = ['#3e3428', '#4a4030', '#5c5040', '#6a5c44', '#7a6a50'];
+  // Stone palette: cool grey-browns, no green tint
+  const PAL = ['#1e1c1a', '#302c28', '#484440', '#5e5a54', '#74706a'];
 
   ctx.save();
   ctx.translate(x, y);
@@ -230,14 +231,28 @@ export function drawAsteroid(ctx, x, y, r, angle, seed) {
   const gridR = Math.ceil(r / PS);
   for (let gy = -gridR; gy <= gridR; gy++) {
     for (let gx = -gridR; gx <= gridR; gx++) {
-      const d = Math.hypot(gx, gy);
-      if (d > gridR) continue;
-      // Irregular edge: skip some border pixels based on seed
+      // Use max(abs) = square base, blended slightly with circle for less-sharp corners
+      const dSquare = Math.max(Math.abs(gx), Math.abs(gy)) / gridR;
+      const dCircle = Math.hypot(gx, gy) / gridR;
+      const baseDist = dSquare * 0.65 + dCircle * 0.35;
+      if (baseDist > 1.0) continue;
+
+      // Heavy jagged edge: cut out many border cells for a chunky rock silhouette
       const hash = Math.sin(seed * 127.1 + gx * 311.7 + gy * 74.3) * 0.5 + 0.5;
-      if (d / gridR > 0.72 && hash < 0.55) continue;
-      // Shading: top-left pixels are lighter
-      const shadeIdx = Math.max(0, Math.min(4, Math.round(2.5 - (gx + gy) / Math.max(1, gridR) * 1.2)));
-      ctx.fillStyle = PAL[shadeIdx];
+      if (baseDist > 0.62 && hash < 0.62) continue;
+
+      // Hard faceted shading — distinct flat faces like stone, not a smooth gradient
+      let ci;
+      if      (gy < -gridR * 0.25)  ci = 4; // top face — lightest
+      else if (gx >  gridR * 0.15)  ci = 1; // right face — darkest
+      else if (gy >  gridR * 0.30)  ci = 2; // bottom face
+      else                           ci = 3; // middle
+
+      // Small noise to break up flat colour bands
+      const noise = Math.sin(seed * 55.3 + gx * 17.1 + gy * 31.4) * 0.5 + 0.5;
+      if (noise < 0.18) ci = Math.max(0, ci - 1);
+
+      ctx.fillStyle = PAL[ci];
       ctx.fillRect(gx * PS - PS / 2, gy * PS - PS / 2, PS, PS);
     }
   }
