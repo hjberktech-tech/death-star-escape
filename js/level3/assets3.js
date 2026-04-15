@@ -805,116 +805,158 @@ export function drawCantinaInterior(ctx) {
 }
 
 // ── Full-screen Docking Bay Interior (battle background) ─────────────────────
+// Brownstone adobe style, Tatooine daytime sky through open roof
 export function drawDockingBayInterior(ctx, falconScreenX) {
   const W = 960, H = 540;
   const groundY = 450;
 
-  // Stone/metal floor
-  ctx.fillStyle = '#2a2520';
+  // ── Sandy stone floor ───────────────────────────────────────────────────────
+  ctx.fillStyle = '#b89050';
   ctx.fillRect(0, groundY, W, H - groundY);
-  ctx.fillStyle = '#1e1a15';
-  for (let x = 0; x < W; x += 110) ctx.fillRect(x, groundY, 2, H - groundY);
-  ctx.fillStyle = '#353028';
-  for (let y = groundY; y < H; y += 28) ctx.fillRect(0, y, W, 1);
+  // Floor grout lines
+  ctx.fillStyle = '#a07838';
+  for (let x = 0; x < W; x += 100) ctx.fillRect(x, groundY, 2, H - groundY);
+  ctx.fillStyle = '#c8a860';
+  for (let y = groundY + 18; y < H; y += 36) ctx.fillRect(0, y, W, 2);
+  // Floor highlight at wall base
+  ctx.fillStyle = '#d4b870';
+  ctx.fillRect(0, groundY, W, 4);
 
-  // Bay floor markings
-  ctx.fillStyle = '#998800';
-  ctx.fillRect(30, groundY + 4, 180, 4);
-  ctx.fillRect(W - 210, groundY + 4, 180, 4);
-  ctx.fillRect(30, groundY + 4, 4, 30);
-  ctx.fillRect(W - 34, groundY + 4, 4, 30);
+  // Bay floor markings (yellow painted lines)
+  ctx.fillStyle = '#cc9900';
+  ctx.fillRect(50, groundY + 6, 220, 5);
+  ctx.fillRect(W - 270, groundY + 6, 220, 5);
+  ctx.fillRect(50, groundY + 6, 5, 36);
+  ctx.fillRect(W - 55, groundY + 6, 5, 36);
   ctx.fillStyle = '#ffcc00';
   ctx.font = 'bold 18px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('DOCKING BAY 94', W / 2, groundY + 28);
+  ctx.fillText('DOCKING BAY 94', W / 2, groundY + 30);
   ctx.textAlign = 'left';
 
-  // Upper area — dark ceiling/walls
-  ctx.fillStyle = '#18140f';
+  // ── Sandstone walls (sides and back) ───────────────────────────────────────
+  // Full interior back wall
+  ctx.fillStyle = '#c4a060';
   ctx.fillRect(0, 0, W, groundY);
-
-  // Open roof section showing stars (centre strip)
-  const openW = 360, openX = (W - openW) / 2;
-  ctx.fillStyle = '#060a12';
-  ctx.fillRect(openX, 0, openW, 110);
-  // Stars
-  ctx.fillStyle = '#ffffff';
-  const stars = [
-    [openX+25,18],[openX+72,48],[openX+115,12],[openX+170,66],[openX+210,32],
-    [openX+255,58],[openX+295,18],[openX+340,44],[openX+355,82],
-    [openX+140,88],[openX+48,82],[openX+235,8],[openX+318,96],[openX+95,102],
-    [openX+185,104],[openX+275,78],[openX+55,36],[openX+330,60],
-  ];
-  for (const [sx, sy] of stars) ctx.fillRect(sx, sy, 2, 2);
-  // Dim star variants
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  for (const [sx, sy] of stars) ctx.fillRect(sx + 12, sy + 5, 1, 1);
-
-  // Ceiling structure framing the opening
-  ctx.fillStyle = '#201c16';
-  ctx.fillRect(0, 0, openX + 10, 120);
-  ctx.fillRect(openX + openW - 10, 0, W - (openX + openW - 10), 120);
-  // Main ceiling (sides, solid)
-  ctx.fillStyle = '#181410';
-  ctx.fillRect(0, 0, openX - 10, groundY);
-  ctx.fillRect(openX + openW + 10, 0, W - (openX + openW + 10), groundY);
-  // Structural beams at roof opening edges
-  ctx.fillStyle = '#3a3228';
-  ctx.fillRect(openX - 14, 0, 14, 150);
-  ctx.fillRect(openX + openW, 0, 14, 150);
-  ctx.fillStyle = '#4a4035';
-  ctx.fillRect(openX - 14, 0, 4, 150);
-  // Horizontal beam below opening
-  ctx.fillStyle = '#2a2520';
-  ctx.fillRect(0, 110, W, 18);
-  ctx.fillStyle = '#3a3228';
-  ctx.fillRect(0, 110, W, 3);
-
-  // Wall lights
-  const lightPos = [60, 200, W - 200, W - 60];
-  for (const lx of lightPos) {
-    ctx.fillStyle = '#44403a';
-    ctx.fillRect(lx - 10, 118, 20, 10);
-    ctx.fillStyle = 'rgba(200,220,255,0.45)';
-    ctx.fillRect(lx - 22, 128, 44, 36);
-    ctx.fillStyle = 'rgba(180,200,255,0.18)';
-    ctx.fillRect(lx - 44, 128, 88, 90);
+  // Stone block texture on back wall
+  ctx.fillStyle = '#b89050';
+  for (let y = 20; y < groundY; y += 48) {
+    const offset = (y % 96 === 0) ? 0 : 50;
+    for (let x = offset - 100; x < W; x += 100) {
+      ctx.fillRect(x, y, 96, 44);
+      // Block face
+      ctx.fillStyle = '#c8aa68';
+      ctx.fillRect(x + 2, y + 2, 92, 40);
+      ctx.fillStyle = '#a88840';
+      ctx.fillRect(x + 2, y + 2, 92, 4);   // top shadow under highlight
+      ctx.fillRect(x + 88, y + 2, 4, 40);  // right shadow
+      ctx.fillStyle = '#b89050';
+    }
   }
 
-  // Left bay wall (solid stone)
-  ctx.fillStyle = '#1e1a14';
-  ctx.fillRect(0, 128, 44, groundY - 128);
-  ctx.fillStyle = '#2a2620';
-  ctx.fillRect(0, 128, 5, groundY - 128);
-  ctx.fillStyle = '#161210';
-  for (let y = 145; y < groundY; y += 55) ctx.fillRect(6, y, 36, 2);
+  // ── Open roof section — Tatooine daytime sky ────────────────────────────────
+  const openW = 380, openX = (W - openW) / 2;
 
-  // Right bay wall
-  ctx.fillStyle = '#1e1a14';
-  ctx.fillRect(W - 44, 128, 44, groundY - 128);
-  ctx.fillStyle = '#161210';
-  ctx.fillRect(W - 5, 128, 5, groundY - 128);
-  ctx.fillStyle = '#161210';
-  for (let y = 145; y < groundY; y += 55) ctx.fillRect(W - 42, y, 36, 2);
+  // Sky gradient approximation (layered)
+  ctx.fillStyle = '#e8c070';
+  ctx.fillRect(openX, 0, openW, 30);
+  ctx.fillStyle = '#d4a850';
+  ctx.fillRect(openX, 30, openW, 30);
+  ctx.fillStyle = '#c49040';
+  ctx.fillRect(openX, 60, openW, 40);
+  ctx.fillStyle = '#b88030';
+  ctx.fillRect(openX, 100, openW, 20);
 
-  // Bay door (partially open, left side)
-  ctx.fillStyle = '#3a3528';
-  ctx.fillRect(0, 280, 28, 170);
-  ctx.fillStyle = '#4a4535';
-  ctx.fillRect(0, 280, 5, 170);
-  ctx.fillStyle = '#2a2820';
-  for (let y = 288; y < 450; y += 20) ctx.fillRect(5, y, 22, 2);
+  // Twin suns (small, high up)
+  ctx.fillStyle = '#ffffaa';
+  ctx.fillRect(openX + 80, 12, 18, 18);
+  ctx.fillStyle = '#ffeecc';
+  ctx.fillRect(openX + 76, 8, 26, 26);
+  ctx.fillStyle = '#ffcc55';
+  ctx.fillRect(openX + 240, 22, 12, 12);
+  ctx.fillStyle = '#ffddaa';
+  ctx.fillRect(openX + 237, 19, 18, 18);
 
-  // Mid-background (atmospheric depth, distant wall)
-  ctx.fillStyle = 'rgba(20,16,10,0.55)';
-  ctx.fillRect(44, 128, openX - 54, groundY - 128);
-  ctx.fillRect(openX + openW + 10, 128, W - 44 - (openX + openW + 10), groundY - 128);
+  // Haze/heat near bottom of sky opening
+  ctx.fillStyle = 'rgba(200,140,40,0.35)';
+  ctx.fillRect(openX, 90, openW, 30);
 
-  // Atmospheric glow from Falcon engines (right side)
+  // ── Roof structure framing the sky opening ──────────────────────────────────
+  // Ceiling on both sides of opening — sandstone
+  ctx.fillStyle = '#9a7838';
+  ctx.fillRect(0, 0, openX, 130);
+  ctx.fillRect(openX + openW, 0, W - openX - openW, 130);
+  // Ceiling stone texture
+  ctx.fillStyle = '#b08840';
+  ctx.fillRect(0, 0, openX, 4);
+  ctx.fillRect(openX + openW, 0, W - openX - openW, 4);
+
+  // Thick sandstone arch beams at opening edges
+  ctx.fillStyle = '#c4a060';
+  ctx.fillRect(openX - 18, 0, 18, 145);
+  ctx.fillRect(openX + openW, 0, 18, 145);
+  // Beam shadow/highlight
+  ctx.fillStyle = '#a88040';
+  ctx.fillRect(openX - 18, 0, 4, 145);
+  ctx.fillStyle = '#dcc078';
+  ctx.fillRect(openX - 4, 0, 4, 145);
+  ctx.fillRect(openX + openW + 14, 0, 4, 145);
+
+  // Horizontal stone ledge under the roof opening
+  ctx.fillStyle = '#b89050';
+  ctx.fillRect(0, 120, W, 22);
+  ctx.fillStyle = '#d4b870';
+  ctx.fillRect(0, 120, W, 4);
+  ctx.fillStyle = '#8a6828';
+  ctx.fillRect(0, 140, W, 2);
+
+  // ── Sandstone side walls (foreground, left and right) ──────────────────────
+  ctx.fillStyle = '#c8a860';
+  ctx.fillRect(0, 142, 52, groundY - 142);
+  ctx.fillStyle = '#dcc078';
+  ctx.fillRect(0, 142, 5, groundY - 142);
+  ctx.fillStyle = '#a88040';
+  ctx.fillRect(48, 142, 4, groundY - 142);
+  // Brick courses on left wall
+  for (let y = 155; y < groundY; y += 50) {
+    ctx.fillStyle = '#b89050';
+    ctx.fillRect(6, y, 40, 2);
+  }
+
+  ctx.fillStyle = '#c8a860';
+  ctx.fillRect(W - 52, 142, 52, groundY - 142);
+  ctx.fillStyle = '#a88040';
+  ctx.fillRect(W - 52, 142, 4, groundY - 142);
+  ctx.fillStyle = '#dcc078';
+  ctx.fillRect(W - 5, 142, 5, groundY - 142);
+  for (let y = 155; y < groundY; y += 50) {
+    ctx.fillStyle = '#b89050';
+    ctx.fillRect(W - 46, y, 40, 2);
+  }
+
+  // ── Bay entrance (arch doorway, left side) ──────────────────────────────────
+  const doorH = 160, doorW = 50;
+  ctx.fillStyle = '#8a6020';
+  ctx.fillRect(0, groundY - doorH, doorW, doorH);
+  // Arch interior
+  ctx.fillStyle = '#c8a860';
+  ctx.fillRect(2, groundY - doorH + 4, doorW - 4, doorH - 4);
+  // Warm outside glow through door
+  ctx.fillStyle = 'rgba(230,180,60,0.30)';
+  ctx.fillRect(4, groundY - doorH + 6, doorW - 8, doorH - 10);
+  // Door step/threshold
+  ctx.fillStyle = '#a88840';
+  ctx.fillRect(0, groundY - 5, doorW, 5);
+
+  // ── Warm Tatooine ambient light overlay ────────────────────────────────────
+  ctx.fillStyle = 'rgba(210,150,40,0.06)';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Engine glow from Falcon ────────────────────────────────────────────────
   if (falconScreenX !== undefined) {
-    ctx.fillStyle = 'rgba(100,160,255,0.06)';
-    ctx.fillRect(falconScreenX + 80, groundY - 100, 120, 100);
+    ctx.fillStyle = 'rgba(100,160,255,0.07)';
+    ctx.fillRect(falconScreenX + 80, groundY - 90, 110, 90);
     ctx.fillStyle = 'rgba(150,200,255,0.04)';
-    ctx.fillRect(falconScreenX + 60, groundY - 150, 160, 150);
+    ctx.fillRect(falconScreenX + 60, groundY - 140, 150, 140);
   }
 }

@@ -4,10 +4,11 @@ import { SCREEN_W, SCREEN_H } from '../constants.js';
 import { drawBackground3, drawBuildings, drawPlatform, drawCantinaEntrance,
          drawMillenniumFalcon, drawCrate, drawLowWall, drawPillar } from './assets3.js';
 
-export const GROUND_Y  = 450;
-export const WORLD_W   = 13200;
-const CANTINA_WORLD_X  = 7610;  // building worldX 7530 + w/2 80
-const FALCON_WORLD_X   = 11550; // world x of Millennium Falcon
+export const GROUND_Y     = 450;
+export const WORLD_W      = 13200;
+const CANTINA_WORLD_X     = 7610;  // building worldX 7530 + w/2 80
+const FALCON_WORLD_X      = 11550; // world x of Millennium Falcon
+const DOCKINGBAY_WORLD_X  = 10800; // entrance to docking bay (battle trigger)
 
 // ── Platform list  { x, y, w }  y = top of platform surface ─────────────────
 const PLATFORM_DATA = [
@@ -129,13 +130,14 @@ export class World3 {
     this.GROUND_Y      = GROUND_Y;
     this.CANTINA_X     = CANTINA_WORLD_X;
     this.FALCON_X      = FALCON_WORLD_X;
+    this.DOCKINGBAY_X  = DOCKINGBAY_WORLD_X;
     this.platforms     = PLATFORM_DATA;
     this.buildings     = BUILDING_DATA;
     this.obstacles     = OBSTACLE_DATA;
     this._cantinaOpen  = false;
   }
 
-  // Returns resolved y after gravity/platform collision.
+  // Returns resolved y after gravity/platform and obstacle-top collision.
   resolveY(playerX, playerY, vy, dt, playerW = 18) {
     const nextY = playerY + vy * dt;
     const half  = playerW / 2;
@@ -145,10 +147,21 @@ export class World3 {
     }
 
     if (vy > 0) {
+      // Check platforms
       for (const p of this.platforms) {
         if (playerX + half > p.x && playerX - half < p.x + p.w) {
           if (playerY <= p.y && nextY >= p.y) {
             return { y: p.y, vy: 0, onGround: true };
+          }
+        }
+      }
+      // Check obstacle tops — player can land and stand on any obstacle
+      for (const o of OBSTACLE_DATA) {
+        const obsTop = GROUND_Y - o.h;
+        if (playerX + half > o.x && playerX - half < o.x + o.w) {
+          // Use a slightly looser check (+ 6px) to catch fast falls
+          if (playerY <= obsTop + 6 && nextY >= obsTop) {
+            return { y: obsTop, vy: 0, onGround: true };
           }
         }
       }
@@ -167,8 +180,9 @@ export class World3 {
       // Player body: feet at playerY, head ~54px above feet
       const playerBottom = playerY;
       const playerTop    = playerY - 54;
-      // Skip if no vertical overlap (player has jumped above this obstacle)
-      if (playerBottom <= obsTop || playerTop >= GROUND_Y) continue;
+      // Skip if player is at or above the obstacle top (standing on it or jumping over)
+      // 4px tolerance so floating-point landings don't cause side-blocking
+      if (playerBottom <= obsTop + 4 || playerTop >= GROUND_Y) continue;
       // Check horizontal overlap in new position
       if (nextX + playerHalfW > o.x && nextX - playerHalfW < o.x + o.w) {
         // Only push if player was NOT already inside (avoids teleport on spawn)

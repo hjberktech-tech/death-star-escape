@@ -147,7 +147,7 @@ export class Battle3 {
       if (!b.active) continue;
       for (const t of this.troopers) {
         if (!t.active || !t.spawned) continue;
-        if (Math.abs(b.x - t.x) < 22 && Math.abs(b.y - t.y) < 30) {
+        if (Math.abs(b.x - t.x) < 22 && Math.abs(b.y - t.y) < 55) {
           b.active = false;
           if (t.hit()) {
             this.killed++;
@@ -162,7 +162,7 @@ export class Battle3 {
     for (const t of this.troopers) {
       for (const b of t.bullets) {
         if (!b.active) continue;
-        if (Math.abs(b.x - player.x) < 20 && Math.abs(b.y - player.y) < 28) {
+        if (Math.abs(b.x - player.x) < 20 && Math.abs(b.y - player.y) < 50) {
           b.active = false;
           player.takeDamage();
         }

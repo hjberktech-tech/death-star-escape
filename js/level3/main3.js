@@ -128,7 +128,7 @@ export function updateLevel3(dt) {
     AudioManager.stopMusic();
   }
 
-  if (!battleTriggered && player.x >= world.FALCON_X) {
+  if (!battleTriggered && player.x >= world.DOCKINGBAY_X) {
     battleTriggered = true;
     state3 = L3State.BATTLE;
     battle.start(player);
@@ -151,7 +151,8 @@ export function renderLevel3(ctx) {
     world.render(ctx, cameraX);
   }
 
-  characters.render(ctx, cameraX);
+  // Skip world NPCs during battle — they don't belong in the bay interior
+  if (state3 !== L3State.BATTLE) characters.render(ctx, cameraX);
   player.render(ctx, cameraX);
 
   if (state3 === L3State.BATTLE) {
