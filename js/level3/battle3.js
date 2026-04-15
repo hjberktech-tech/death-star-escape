@@ -1,25 +1,27 @@
-// js/level3/battle3.js — Final stormtrooper wave battle at the Millennium Falcon
+// js/level3/battle3.js — Final stormtrooper wave battle inside Docking Bay 94
 
 import { SCREEN_W, SCREEN_H } from '../constants.js';
-import { drawStormtrooper, drawBullet3 } from './assets3.js';
+import { drawStormtrooper, drawBullet3,
+         drawMillenniumFalcon, drawDockingBayInterior } from './assets3.js';
 import { GROUND_Y } from './world3.js';
 import { Explosion } from '../level2/enemies2.js';
 
 const WALK_FPS     = 7;
 const BULLET_SPEED = 360;
 
-// Battle happens at a fixed world position so the Falcon stays visible.
-// BATTLE_CAM_X is the camera x used for the entire battle (locked).
-// Player stands at BATTLE_PLAYER_X (world x).
-// Troopers spawn off the right edge of the battle camera view.
-const BATTLE_CAM_X    = 3100;
-const BATTLE_PLAYER_X = 3340;  // screen x = 3340-3100 = 240
-const SPAWN_BASE_X    = BATTLE_CAM_X + SCREEN_W + 40; // 4100
+// Battle is locked to a fixed camera x so the Falcon stays visible.
+// The player can move freely within the visible battle area.
+const BATTLE_CAM_X    = 10800;
+const BATTLE_PLAYER_X = 11040; // starting x when battle begins
+const SPAWN_BASE_X    = BATTLE_CAM_X + SCREEN_W + 40; // 11800
+const BATTLE_MIN_X    = BATTLE_CAM_X + 30;            // left edge clamp
+const BATTLE_MAX_X    = BATTLE_CAM_X + SCREEN_W - 30; // right edge clamp
+const FALCON_SCREEN_X = 11550 - BATTLE_CAM_X;         // ≈ 750
 
 // ── Battle stormtrooper ───────────────────────────────────────────────────────
 class BattleTrooper {
   constructor(worldX, spawnDelay) {
-    this.x          = worldX;  // world x
+    this.x          = worldX;
     this.y          = GROUND_Y;
     this.hp         = 2;
     this.facing     = -1;
@@ -105,7 +107,6 @@ export class Battle3 {
     this.done         = false;
     this.waveMsg      = '';
     this.waveMsgTimer = 0;
-    // Fixed camera x during battle — locked so Falcon stays visible
     this.camX         = BATTLE_CAM_X;
   }
 
@@ -134,8 +135,8 @@ export class Battle3 {
   update(dt, player) {
     if (this.done) return;
 
-    // Lock player to battle position
-    player.x = BATTLE_PLAYER_X;
+    // Player can move freely — clamp to battle area
+    player.x = Math.max(BATTLE_MIN_X, Math.min(BATTLE_MAX_X, player.x));
 
     if (this.waveMsgTimer > 0) this.waveMsgTimer -= dt;
 
@@ -171,7 +172,6 @@ export class Battle3 {
     for (const ex of this.explosions) ex.update(dt);
     this.explosions = this.explosions.filter(ex => !ex.done);
 
-    // Advance wave when all dead
     const waveActive = this.troopers.some(t => t.active);
     if (!waveActive && this.waveIdx < WAVES.length - 1) {
       this.waveIdx++;
@@ -185,8 +185,15 @@ export class Battle3 {
     return Math.min(1, this.killed / this.totalNeeded);
   }
 
+  // Called INSTEAD of world.render during battle — draws docking bay interior
+  renderBackground(ctx) {
+    drawDockingBayInterior(ctx, FALCON_SCREEN_X);
+    drawMillenniumFalcon(ctx, FALCON_SCREEN_X, GROUND_Y - 44);
+  }
+
   render(ctx, camX) {
     for (const t of this.troopers) t.render(ctx, camX);
+
     ctx.save();
     ctx.translate(-camX, 0);
     for (const ex of this.explosions) ex.render(ctx);

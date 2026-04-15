@@ -17,13 +17,15 @@ export class Bullet3 {
   constructor(x, y, facing) {
     this.x      = x;
     this.y      = y;
+    this.startX = x;
     this.vx     = facing * BULLET_SPEED;
     this.active = true;
     this.facing = facing;
   }
   update(dt) {
     this.x += this.vx * dt;
-    if (this.x < -40 || this.x > SCREEN_W + 40) this.active = false;
+    // Deactivate after traveling ~1.5 screen widths
+    if (Math.abs(this.x - this.startX) > 1500) this.active = false;
   }
 }
 
@@ -56,8 +58,9 @@ export class Player3 {
     if (input.right) { dx =  1; this.facing =  1; }
     this.walking = dx !== 0;
 
-    this.x += dx * WALK_SPEED * dt;
-    // Clamp to world
+    // Resolve horizontal movement against solid obstacles
+    const moveAmount = dx * WALK_SPEED * dt;
+    this.x = world.resolveX(this.x, this.y, moveAmount, this.halfW);
     this.x = Math.max(40, Math.min(world.WORLD_W - 40, this.x));
 
     // ── Jump ─────────────────────────────────────────────────────────────────

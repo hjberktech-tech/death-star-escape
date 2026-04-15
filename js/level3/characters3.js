@@ -28,7 +28,7 @@ class EnemyBullet3 {
   }
   update(dt) {
     this.x += this.vx * dt;
-    if (this.x < -200 || this.x > 5000) this.active = false;
+    if (this.x < -200 || this.x > 15000) this.active = false;
   }
 }
 
@@ -304,13 +304,12 @@ class Officer extends Character3 {
   }
 }
 
-// ── Civilian (friendly — wanders, no shooting) ────────────────────────────────
+// ── Civilian (wanders, no shooting — penalty if killed) ───────────────────────
 class Civilian extends Character3 {
   constructor(data) {
     super(data);
-    this.friendly   = true;
     this.hp         = 1;
-    this.scoreValue = -50; // penalty
+    this.scoreValue = -50; // score penalty
     this.speed      = 45;
     this.variant    = data.variant ?? 0;
   }

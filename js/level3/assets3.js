@@ -682,3 +682,239 @@ export function drawCantinaEntrance(ctx, screenX, groundY) {
   ctx.fillStyle = '#ffcc66';
   ctx.fillRect(screenX - 8, groundY - 2, 16, 2);
 }
+
+// ── Full-screen Cantina Interior (cutscene background) ────────────────────────
+export function drawCantinaInterior(ctx) {
+  const W = 960, H = 540;
+
+  // Dark warm base
+  ctx.fillStyle = '#180c06';
+  ctx.fillRect(0, 0, W, H);
+
+  // Floor — worn stone
+  ctx.fillStyle = '#2a1e12';
+  ctx.fillRect(0, 360, W, H - 360);
+  ctx.fillStyle = '#221608';
+  for (let x = 0; x < W; x += 90) ctx.fillRect(x, 360, 2, H - 360);
+  for (let y = 360; y < H; y += 40) ctx.fillRect(0, y, W, 1);
+
+  // Back wall with stone texture
+  ctx.fillStyle = '#1e1208';
+  ctx.fillRect(0, 0, W, 365);
+  ctx.fillStyle = '#261a0e';
+  for (let y = 40; y < 360; y += 50) {
+    for (let x = (y % 100 === 0 ? 0 : 45); x < W; x += 90) {
+      ctx.fillStyle = '#2e1e10';
+      ctx.fillRect(x, y, 84, 44);
+      ctx.fillStyle = '#1a1008';
+      ctx.fillRect(x, y, 84, 2);
+      ctx.fillRect(x + 84, y, 2, 44);
+    }
+  }
+
+  // Background arch doorways (left and right of scene)
+  function _archBg(cx, baseY, w, h) {
+    ctx.fillStyle = '#100806';
+    ctx.fillRect(cx - w/2, baseY - h, w, h);
+    ctx.fillStyle = '#0a0604';
+    ctx.fillRect(cx - w/2 + 2, baseY - h + 2, w - 4, h - 2);
+    // Warm glow inside arch
+    ctx.fillStyle = 'rgba(200,100,20,0.08)';
+    ctx.fillRect(cx - w/2 + 4, baseY - h + 4, w - 8, h - 6);
+  }
+  _archBg(90,  360, 70, 160);
+  _archBg(870, 360, 70, 160);
+  _archBg(250, 360, 50, 120);
+  _archBg(710, 360, 50, 120);
+
+  // Background alien silhouettes at booths
+  const silColors = ['#2a1a0e', '#1e1408', '#261608'];
+  const patrons = [
+    { x: 70,  y: 320, w: 20, hd: 14 },
+    { x: 110, y: 325, w: 18, hd: 18 },
+    { x: 240, y: 318, w: 22, hd: 16 },
+    { x: 700, y: 320, w: 20, hd: 20 },
+    { x: 740, y: 322, w: 18, hd: 14 },
+    { x: 860, y: 318, w: 22, hd: 16 },
+    { x: 900, y: 320, w: 20, hd: 18 },
+  ];
+  for (let i = 0; i < patrons.length; i++) {
+    const p = patrons[i];
+    ctx.fillStyle = silColors[i % 3];
+    ctx.fillRect(p.x - p.w/2, p.y - 40, p.w, 40);    // body
+    ctx.fillRect(p.x - p.hd/2, p.y - 40 - p.hd, p.hd, p.hd); // head
+  }
+
+  // Hanging lights — warm glows
+  const lampX = [160, 320, 480, 640, 800];
+  for (const lx of lampX) {
+    // Cord
+    ctx.fillStyle = '#3a2a18';
+    ctx.fillRect(lx - 1, 0, 2, 80);
+    // Lamp fixture
+    ctx.fillStyle = '#aa7730';
+    ctx.fillRect(lx - 10, 76, 20, 12);
+    ctx.fillRect(lx - 6, 88, 12, 6);
+    // Glow (layered radial approximation with rectangles)
+    ctx.fillStyle = 'rgba(255,160,40,0.30)';
+    ctx.fillRect(lx - 60, 82, 120, 80);
+    ctx.fillStyle = 'rgba(255,180,60,0.20)';
+    ctx.fillRect(lx - 100, 82, 200, 140);
+    ctx.fillStyle = 'rgba(255,200,80,0.10)';
+    ctx.fillRect(lx - 150, 82, 300, 220);
+  }
+
+  // Band silhouette — top-right corner
+  ctx.fillStyle = '#140e06';
+  ctx.fillRect(760, 200, 200, 160);
+  ctx.fillStyle = '#1e1408';
+  ctx.fillRect(762, 202, 196, 156);
+  // Band members (silhouettes)
+  const band = [{x:790,y:355,hw:10},{x:820,y:348,hw:14},{x:855,y:352,hw:10},{x:885,y:350,hw:12}];
+  for (const m of band) {
+    ctx.fillStyle = '#0e0806';
+    ctx.fillRect(m.x - m.hw/2, m.y - 38, m.hw, 38);
+    ctx.fillRect(m.x - 8, m.y - 38 - 14, 16, 14);
+    // Instrument outline
+    ctx.fillStyle = '#1a100a';
+    ctx.fillRect(m.x + m.hw/2, m.y - 32, 16, 6);
+  }
+  ctx.fillStyle = '#3a2810';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('MOS EISLEY CANTINA', 860, 215);
+  ctx.textAlign = 'left';
+
+  // Bar counter (right side)
+  ctx.fillStyle = '#3a2210';
+  ctx.fillRect(620, 280, 140, 80);
+  ctx.fillStyle = '#5a3820';
+  ctx.fillRect(620, 278, 140, 8);
+  // Bottles on bar
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = ['#2244aa','#448822','#aa4422','#226644','#884422'][i];
+    ctx.fillRect(628 + i * 22, 252, 10, 28);
+    ctx.fillRect(631 + i * 22, 248, 4, 6);
+  }
+
+  // Atmospheric ambient glow overlay (centre warm light from above)
+  ctx.fillStyle = 'rgba(180,80,10,0.06)';
+  ctx.fillRect(200, 0, 560, 540);
+  ctx.fillStyle = 'rgba(200,100,20,0.04)';
+  ctx.fillRect(0, 0, 960, 540);
+}
+
+// ── Full-screen Docking Bay Interior (battle background) ─────────────────────
+export function drawDockingBayInterior(ctx, falconScreenX) {
+  const W = 960, H = 540;
+  const groundY = 450;
+
+  // Stone/metal floor
+  ctx.fillStyle = '#2a2520';
+  ctx.fillRect(0, groundY, W, H - groundY);
+  ctx.fillStyle = '#1e1a15';
+  for (let x = 0; x < W; x += 110) ctx.fillRect(x, groundY, 2, H - groundY);
+  ctx.fillStyle = '#353028';
+  for (let y = groundY; y < H; y += 28) ctx.fillRect(0, y, W, 1);
+
+  // Bay floor markings
+  ctx.fillStyle = '#998800';
+  ctx.fillRect(30, groundY + 4, 180, 4);
+  ctx.fillRect(W - 210, groundY + 4, 180, 4);
+  ctx.fillRect(30, groundY + 4, 4, 30);
+  ctx.fillRect(W - 34, groundY + 4, 4, 30);
+  ctx.fillStyle = '#ffcc00';
+  ctx.font = 'bold 18px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('DOCKING BAY 94', W / 2, groundY + 28);
+  ctx.textAlign = 'left';
+
+  // Upper area — dark ceiling/walls
+  ctx.fillStyle = '#18140f';
+  ctx.fillRect(0, 0, W, groundY);
+
+  // Open roof section showing stars (centre strip)
+  const openW = 360, openX = (W - openW) / 2;
+  ctx.fillStyle = '#060a12';
+  ctx.fillRect(openX, 0, openW, 110);
+  // Stars
+  ctx.fillStyle = '#ffffff';
+  const stars = [
+    [openX+25,18],[openX+72,48],[openX+115,12],[openX+170,66],[openX+210,32],
+    [openX+255,58],[openX+295,18],[openX+340,44],[openX+355,82],
+    [openX+140,88],[openX+48,82],[openX+235,8],[openX+318,96],[openX+95,102],
+    [openX+185,104],[openX+275,78],[openX+55,36],[openX+330,60],
+  ];
+  for (const [sx, sy] of stars) ctx.fillRect(sx, sy, 2, 2);
+  // Dim star variants
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  for (const [sx, sy] of stars) ctx.fillRect(sx + 12, sy + 5, 1, 1);
+
+  // Ceiling structure framing the opening
+  ctx.fillStyle = '#201c16';
+  ctx.fillRect(0, 0, openX + 10, 120);
+  ctx.fillRect(openX + openW - 10, 0, W - (openX + openW - 10), 120);
+  // Main ceiling (sides, solid)
+  ctx.fillStyle = '#181410';
+  ctx.fillRect(0, 0, openX - 10, groundY);
+  ctx.fillRect(openX + openW + 10, 0, W - (openX + openW + 10), groundY);
+  // Structural beams at roof opening edges
+  ctx.fillStyle = '#3a3228';
+  ctx.fillRect(openX - 14, 0, 14, 150);
+  ctx.fillRect(openX + openW, 0, 14, 150);
+  ctx.fillStyle = '#4a4035';
+  ctx.fillRect(openX - 14, 0, 4, 150);
+  // Horizontal beam below opening
+  ctx.fillStyle = '#2a2520';
+  ctx.fillRect(0, 110, W, 18);
+  ctx.fillStyle = '#3a3228';
+  ctx.fillRect(0, 110, W, 3);
+
+  // Wall lights
+  const lightPos = [60, 200, W - 200, W - 60];
+  for (const lx of lightPos) {
+    ctx.fillStyle = '#44403a';
+    ctx.fillRect(lx - 10, 118, 20, 10);
+    ctx.fillStyle = 'rgba(200,220,255,0.45)';
+    ctx.fillRect(lx - 22, 128, 44, 36);
+    ctx.fillStyle = 'rgba(180,200,255,0.18)';
+    ctx.fillRect(lx - 44, 128, 88, 90);
+  }
+
+  // Left bay wall (solid stone)
+  ctx.fillStyle = '#1e1a14';
+  ctx.fillRect(0, 128, 44, groundY - 128);
+  ctx.fillStyle = '#2a2620';
+  ctx.fillRect(0, 128, 5, groundY - 128);
+  ctx.fillStyle = '#161210';
+  for (let y = 145; y < groundY; y += 55) ctx.fillRect(6, y, 36, 2);
+
+  // Right bay wall
+  ctx.fillStyle = '#1e1a14';
+  ctx.fillRect(W - 44, 128, 44, groundY - 128);
+  ctx.fillStyle = '#161210';
+  ctx.fillRect(W - 5, 128, 5, groundY - 128);
+  ctx.fillStyle = '#161210';
+  for (let y = 145; y < groundY; y += 55) ctx.fillRect(W - 42, y, 36, 2);
+
+  // Bay door (partially open, left side)
+  ctx.fillStyle = '#3a3528';
+  ctx.fillRect(0, 280, 28, 170);
+  ctx.fillStyle = '#4a4535';
+  ctx.fillRect(0, 280, 5, 170);
+  ctx.fillStyle = '#2a2820';
+  for (let y = 288; y < 450; y += 20) ctx.fillRect(5, y, 22, 2);
+
+  // Mid-background (atmospheric depth, distant wall)
+  ctx.fillStyle = 'rgba(20,16,10,0.55)';
+  ctx.fillRect(44, 128, openX - 54, groundY - 128);
+  ctx.fillRect(openX + openW + 10, 128, W - 44 - (openX + openW + 10), groundY - 128);
+
+  // Atmospheric glow from Falcon engines (right side)
+  if (falconScreenX !== undefined) {
+    ctx.fillStyle = 'rgba(100,160,255,0.06)';
+    ctx.fillRect(falconScreenX + 80, groundY - 100, 120, 100);
+    ctx.fillStyle = 'rgba(150,200,255,0.04)';
+    ctx.fillRect(falconScreenX + 60, groundY - 150, 160, 150);
+  }
+}

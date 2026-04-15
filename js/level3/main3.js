@@ -144,7 +144,13 @@ export function updateLevel3(dt) {
 // ── Render ────────────────────────────────────────────────────────────────────
 
 export function renderLevel3(ctx) {
-  world.render(ctx, cameraX);
+  if (state3 === L3State.BATTLE) {
+    // Inside docking bay — replace world background with interior
+    battle.renderBackground(ctx);
+  } else {
+    world.render(ctx, cameraX);
+  }
+
   characters.render(ctx, cameraX);
   player.render(ctx, cameraX);
 
